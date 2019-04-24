@@ -1,6 +1,6 @@
 /**************************************************************
 * File: a3.pde
-* Group: <Group members,group number>
+* Group: Joel Foster, *Add your names just testing git* (Group 30)
 * Date: 14/03/2018
 * Course: COSC101 - Software Development Studio 1
 * Desc: Astroids is a ...
