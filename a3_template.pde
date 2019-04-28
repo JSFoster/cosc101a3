@@ -16,19 +16,18 @@ PVector[] astroids = new PVector[astroNums];
 PVector[] astroDirect = new PVector[astroNums];
 
 	//===== ship related globals ====
-float radians=radians(0); //if your ship is facing up (like in atari game)
-float turnSpeed = 0.05;
+boolean sUP=false,sDOWN=false,sRIGHT=false,sLEFT=false;
+float shipAngle=radians(270); 
+float turnSpeed = 0.10;
 PVector shipLoc;
 PVector shipVel;
-PVector shipAcc;
-PVector shipFric;
-int speedLimit = 8;
-float thrusterPower = 0.25;
-float spaceFriction = 0.05;
+float shipFric = 0.98;
+int speedLimit = 6;
+float thrusterPower = 0.15;
 
 ArrayList shots= new ArrayList();
 ArrayList sDirections= new ArrayList();
-boolean sUP=false,sDOWN=false,sRIGHT=false,sLEFT=false;
+
 int score=0;
 boolean alive=true;
 
@@ -38,11 +37,9 @@ void setup(){
 
   shipLoc = new PVector(width/2, height/2);
   shipVel = new PVector(0, 0);  
-  shipAcc = new PVector(thrusterPower, thrusterPower);
-  shipFric = new PVector(spaceFriction, spaceFriction);  
-  ship = createShape(TRIANGLE, 0, -15, -10, 15, 10, 15);
-  thrust = createShape(TRIANGLE, 0, 25, -5, 15, 5, 15);
-
+  ship = createShape(TRIANGLE, 15, 0, -15, -10, -15, 10);
+  thrust = createShape(TRIANGLE, -25, 0, -15, -5, -15, 5);
+  
   //initialise pvtecotrs
   //random astroid initial positions and directions;
   //initialise shapes if needed
@@ -76,30 +73,29 @@ void moveShip(){
 
   if (shipLoc.y < 0){ shipLoc.y = height; }            //border wraps
   if (shipLoc.y > height){ shipLoc.y = 0; }
+  if (shipLoc.x < 0){ shipLoc.x = width; }
+  if (shipLoc.x > width){ shipLoc.x = 0; }
   
-  if (shipVel.y < 0){shipVel.y = shipVel.y + shipFric.y ;} // slow down
-  else            {shipVel.y = shipVel.y - shipFric.y ;}
+  if(sUP) { shipVel.add(PVector.fromAngle(shipAngle));}           //speed up
+    //if(sDOWN){  shipVel.y = shipVel.y+shipAcc.y; }  // brakes are for girls
+  if(sRIGHT){ shipAngle = shipAngle+turnSpeed; } 
+  if(sLEFT){  shipAngle = shipAngle-turnSpeed; }
   
-  if(sUP) {   shipVel.y = shipVel.y-shipAcc.y; }            //speed up
-  if(sDOWN){  shipVel.y = shipVel.y+shipAcc.y; }
-  if(sRIGHT){ radians = radians+turnSpeed; println("turning not working yet"); } 
-  if(sLEFT){  radians = radians-turnSpeed; println("turning not working yet"); }
-  
-  shipVel.limit(speedLimit);                            // limit speed
-  
-  shipLoc.x = shipLoc.x + shipVel.x;            // change ship location
-  shipLoc.y = shipLoc.y + shipVel.y;
+  shipVel.mult(shipFric);         // slow down
+  shipVel.limit(speedLimit);      // limit speed
+  shipLoc.add(shipVel);           // change ship location
 }
 
 void drawShip(){
   moveShip();
   
-    pushMatrix();        
-    translate(shipLoc.x, shipLoc.y);
-    rotate(radians);   
-    shape(ship,0,0); 
-    if(sUP){shape(thrust,0,0);} 
-    popMatrix();
+  pushMatrix();        
+  translate(shipLoc.x, shipLoc.y);
+  rotate(shipAngle);
+  println(shipLoc.heading());
+  shape(ship,0,0); 
+  if(sUP){shape(thrust,0,0);} 
+  popMatrix();
   
 }
 
@@ -131,6 +127,10 @@ void keyPressed() {
     if (keyCode == LEFT) { sLEFT=true; }
   }
   if (key == ' ') {  println("pew, pew"); } //fire a shot
+  if (key == 'w'){ sUP=true; }
+  if (key == 's'){ sDOWN=true; }
+  if (key == 'd'){ sRIGHT=true; }
+  if (key == 'a'){ sLEFT=true; }
 }
 void keyReleased() {
   if (key == CODED) {
@@ -139,4 +139,9 @@ void keyReleased() {
     if (keyCode == RIGHT){ sRIGHT=false; }
     if (keyCode == LEFT) { sLEFT=false; }
   }
+  if (key == ' ') {  println("pew, pew"); } //fire a shot
+  if (key == 'w'){ sUP=false; }
+  if (key == 's'){ sDOWN=false; }
+  if (key == 'd'){ sRIGHT=false; }
+  if (key == 'a'){ sLEFT=false; }
 }
