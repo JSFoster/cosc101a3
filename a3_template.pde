@@ -10,25 +10,53 @@
 * ...
 **************************************************************/
 
-PShape ship; // don't have to use pshape - can use image
+PShape ship,thrust; // don't have to use pshape - can use image
 int astroNums=20;
 PVector[] astroids = new PVector[astroNums];
 PVector[] astroDirect = new PVector[astroNums];
-float speed = 0;
-float maxSpeed = 4;
-float radians=radians(270); //if your ship is facing up (like in atari game)
-PVector shipCoord;
-PVector direction;
+
+	//===== ship related globals ====
+float radians=radians(0); //if your ship is facing up (like in atari game)
+float turnSpeed = 0.05;
+PVector shipLoc;
+PVector shipVel;
+PVector shipAcc;
+PVector shipFric;
+int speedLimit = 8;
+float thrusterPower = 0.25;
+float spaceFriction = 0.05;
+
 ArrayList shots= new ArrayList();
 ArrayList sDirections= new ArrayList();
 boolean sUP=false,sDOWN=false,sRIGHT=false,sLEFT=false;
 int score=0;
 boolean alive=true;
+
+
 void setup(){
   size(800,800);
+
+  shipLoc = new PVector(width/2, height/2);
+  shipVel = new PVector(0, 0);  
+  shipAcc = new PVector(thrusterPower, thrusterPower);
+  shipFric = new PVector(spaceFriction, spaceFriction);  
+  ship = createShape(TRIANGLE, 0, -15, -10, 15, 10, 15);
+  thrust = createShape(TRIANGLE, 0, 25, -5, 15, 5, 15);
+
   //initialise pvtecotrs
   //random astroid initial positions and directions;
   //initialise shapes if needed
+}
+
+void draw(){
+  background(0);
+          //might be worth checking to see if you are still alive first
+  collisionDetection();
+  drawShots();
+  drawShip();
+          // report if game over or won
+  drawAstroids();
+          // draw score
 }
 
 /**************************************************************
@@ -46,20 +74,35 @@ void setup(){
 
 void moveShip(){
 
-  //this function should update if keys are pressed down
-     // - this creates smooth movement
-  //update rotation,speed and update current location
-  //you should also check to make sure your ship is not outside of the window
-  if(sUP){
-  }
-  if(sDOWN){
-
-  }
-  if(sRIGHT){
-  }
-  if(sLEFT){
-  }
+  if (shipLoc.y < 0){ shipLoc.y = height; }            //border wraps
+  if (shipLoc.y > height){ shipLoc.y = 0; }
+  
+  if (shipVel.y < 0){shipVel.y = shipVel.y + shipFric.y ;} // slow down
+  else            {shipVel.y = shipVel.y - shipFric.y ;}
+  
+  if(sUP) {   shipVel.y = shipVel.y-shipAcc.y; }            //speed up
+  if(sDOWN){  shipVel.y = shipVel.y+shipAcc.y; }
+  if(sRIGHT){ radians = radians+turnSpeed; println("turning not working yet"); } 
+  if(sLEFT){  radians = radians-turnSpeed; println("turning not working yet"); }
+  
+  shipVel.limit(speedLimit);                            // limit speed
+  
+  shipLoc.x = shipLoc.x + shipVel.x;            // change ship location
+  shipLoc.y = shipLoc.y + shipVel.y;
 }
+
+void drawShip(){
+  moveShip();
+  
+    pushMatrix();        
+    translate(shipLoc.x, shipLoc.y);
+    rotate(radians);   
+    shape(ship,0,0); 
+    if(sUP){shape(thrust,0,0);} 
+    popMatrix();
+  
+}
+
 void drawShots(){
    //draw points for each shot from spacecraft
    //at location and updated to new location
@@ -78,51 +121,22 @@ void collisionDetection(){
   //check if ship as collided wiht astroids
 }
 
-void draw(){
-  background(0);
-  //might be worth checking to see if you are still alive first
-  moveShip();
-  collisionDetection();
-  drawShots();
-  // draw ship - call shap(..) if Pshape
-  // report if game over or won
-  drawAstroids();
-  // draw score
-}
+
 
 void keyPressed() {
   if (key == CODED) {
-    if (keyCode == UP) {
-      sUP=true;
-    }
-    if (keyCode == DOWN) {
-      sDOWN=true;
-    }
-    if (keyCode == RIGHT) {
-      sRIGHT=true;
-    }
-    if (keyCode == LEFT) {
-      sLEFT=true;
-    }
+    if (keyCode == UP)   { sUP=true; }
+    if (keyCode == DOWN) { sDOWN=true; }
+    if (keyCode == RIGHT){ sRIGHT=true; }
+    if (keyCode == LEFT) { sLEFT=true; }
   }
-  if (key == ' ') {
-    //fire a shot
-  }
+  if (key == ' ') {  println("pew, pew"); } //fire a shot
 }
-
 void keyReleased() {
   if (key == CODED) {
-    if (keyCode == UP) {
-      sUP=false;
-    }
-    if (keyCode == DOWN) {
-      sDOWN=false;
-    }
-    if (keyCode == RIGHT) {
-      sRIGHT=false;
-    }
-    if (keyCode == LEFT) {
-      sLEFT=false;
-    }
+    if (keyCode == UP)   { sUP=false; }
+    if (keyCode == DOWN) { sDOWN=false; }
+    if (keyCode == RIGHT){ sRIGHT=false; }
+    if (keyCode == LEFT) { sLEFT=false; }
   }
 }
