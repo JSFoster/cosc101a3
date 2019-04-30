@@ -1,6 +1,6 @@
 /**************************************************************
 * File: a3.pde
-* Group: Joel Foster, Mark Anderson, *Add your names just testing git* (Group 30)
+* Group: Joel Foster, Mark Anderson, Leigh Dayes (Group 30)
 * Date: 14/03/2018
 * Course: COSC101 - Software Development Studio 1
 * Desc: Astroids is a ...
@@ -24,6 +24,9 @@ PVector shipVel;
 float shipFric = 0.98;
 int speedLimit = 6;
 float thrusterPower = 0.15;
+float astroSpeed = 1.0;
+boolean[] hit = new boolean [astroNums];
+boolean[] destroyed = new boolean [astroNums];
 
 ArrayList shots= new ArrayList();
 ArrayList sDirections= new ArrayList();
@@ -42,6 +45,13 @@ void setup(){
   
   //initialise pvtecotrs
   //random astroid initial positions and directions;
+  for (int i = 0; i < astroNums; i++){
+    astroids[i] = new PVector(0, random(0,height));// may want to change so not all astroids start from left edge
+    astroDirect[i] = new PVector(random(-astroSpeed,astroSpeed),random(-astroSpeed,astroSpeed));
+    hit[i] = false;
+    destroyed[i] = false;
+  }
+    
   //initialise shapes if needed
 }
 
@@ -109,8 +119,30 @@ void drawAstroids(){
   //otherwise draw at location
   //initial direction and location should be randomised
   //also make sure the astroid has not moved outside of the window
-
+  for (int i = 0 ; i < astroNums ; i ++){
+    if (!hit[i]){
+      astroids[i].add(astroDirect[i]);
+      if (astroids[i].x > width){
+        astroids[i].x = 0;
+      }
+      else if (astroids[i].x < 0){
+        astroids[i].x = width;
+      }
+      if (astroids[i].y > height){
+        astroids[i].y = 0;
+      }
+      else if (astroids[i].y < 0){
+        astroids[i].y = height;
+      }
+      //ellipse for now TODO: PImage or PShape
+      stroke(255);
+      strokeWeight(3);
+      noFill();
+      ellipse(astroids[i].x,astroids[i].y,50,30);
+    }
+  }
 }
+
 
 void collisionDetection(){
   //check if shots have collided with astroids
