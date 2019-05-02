@@ -40,7 +40,9 @@ boolean[] destroyedThree = new boolean [astroNums];
 ArrayList<PVector> shots= new ArrayList<PVector>();
 ArrayList<PVector> sDirections= new ArrayList<PVector>();
 PVector shotVel;
-float shotSpeed = 1.1;
+float shotSpeed = 25;
+float fireRate = 0.1; // Adjust 0.0 - 1.0
+float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
 
 int score=0;
 boolean alive=true;
@@ -135,12 +137,19 @@ void drawShots(){
    //at location and updated to new location
    fill(255);
    if (sSPACE) {
-     shots.add(new PVector(shipLoc.x, shipLoc.y));
-     sDirections.add(PVector.fromAngle(shipAngle));
+     timeToFire += fireRate;
+     if (timeToFire >= 1) {
+       shots.add(new PVector(shipLoc.x, shipLoc.y));
+       sDirections.add(PVector.fromAngle(shipAngle));
+       timeToFire = 0;
+     }
+   } else if (!sSPACE) {
+     timeToFire = 1;
    }
    for (int i = 0; i < shots.size(); i++) {
      ellipse(shots.get(i).x, shots.get(i).y, 2, 2);
-     shotVel = sDirections.get(i);
+     shotVel = sDirections.get(i).normalize();
+     shotVel.mult(shotSpeed);
      shots.get(i).add(shotVel);
    }
 }
@@ -241,7 +250,7 @@ void keyPressed() {
     if (keyCode == RIGHT){ sRIGHT=true; }
     if (keyCode == LEFT) { sLEFT=true; }
   }
-  if (key == ' ') {  println("pew, pew"); sSPACE=true;} //fire a shot
+  if (key == ' ') { sSPACE=true;} //fire a shot
   if (key == 'w'){ sUP=true; }
   if (key == 's'){ sDOWN=true; }
   if (key == 'd'){ sRIGHT=true; }
@@ -254,7 +263,7 @@ void keyReleased() {
     if (keyCode == RIGHT){ sRIGHT=false; }
     if (keyCode == LEFT) { sLEFT=false; }
   }
-  if (key == ' ') {  println("pew, pew"); sSPACE=false;} //fire a shot
+  if (key == ' ') { sSPACE=false;} //fire a shot
   if (key == 'w'){ sUP=false; }
   if (key == 's'){ sDOWN=false; }
   if (key == 'd'){ sRIGHT=false; }
