@@ -9,15 +9,12 @@
  * Notes: If any third party items are use they need to be credited (don't use anything with copyright - unless you have permission)
  * ...
  **************************************************************
- HUD image sourced from: https://forums.libretro.com
- All other images sourced from: https://www.kisspng.com 
+ All images sourced from: https://www.kisspng.com 
  */
 
-PImage frame,ship,ufo,nebula1,nebula2,nebula3,nebula4,stars,rock1,rock2,rock3,rock4;
+PImage frame,ship,ufo,nebula1,nebula2,nebula3,nebula4,stars1,stars2,stars3,stars4,stars5,rock1,rock2,rock3,rock4;
 PShape thrust;
-int nebulaRandomizer;
-int nebulaPosRandomizerX;
-int nebulaPosRandomizerY;
+int nebulaRandomizer,backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
 int astroNums=20;
 PVector[] astroids = new PVector[astroNums];
@@ -56,6 +53,7 @@ int score=0;
 boolean alive=true;
 
 void setup() {
+  //fullScreen();
   size(1200, 800);
 
   shipLoc = new PVector(width/2, height/2);
@@ -72,12 +70,17 @@ void setup() {
   nebula2 = loadImage ("nebula2.png");
   nebula3 = loadImage ("nebula3.png");
   nebula4 = loadImage ("nebula4.png");
-  stars   = loadImage ("stars.png");
+  stars1  = loadImage ("stars1.png");
+  stars2  = loadImage ("stars2.png");
+  stars3  = loadImage ("stars3.png");
+  stars4  = loadImage ("stars4.png");
+  stars5  = loadImage ("stars5.png");
   rock1   = loadImage("rock1.png");
   rock2   = loadImage("rock2.png");
   rock3   = loadImage("rock3.png");
   rock4   = loadImage("rock4.png"); 
   nebulaRandomizer =int(random(1,5));
+  backGroundRandomizer =int(random(1,6));
   nebulaPosRandomizerX =int(random(0,width));
   nebulaPosRandomizerY =int(random(0,height));
 
@@ -172,7 +175,22 @@ void drawShip() {
 
 void drawBackGround() {
   background(0);
-  image(stars,width/2,height/2);
+  tint(90);
+  if (backGroundRandomizer == 1 ){
+    image(stars1,width/2,height/2);
+  }
+  else if (backGroundRandomizer == 2 ){
+    image(stars2,width/2,height/2); 
+  }
+  else if (backGroundRandomizer == 3 ){
+    image(stars3,width/2,height/2); 
+  }
+  else if (backGroundRandomizer == 4 ){
+    image(stars4,width/2,height/2);
+  }
+  else if (backGroundRandomizer == 5 ){
+    image(stars5,width/2,height/2);
+  }
   if (nebulaRandomizer == 1 ){
     image(nebula1,nebulaPosRandomizerX,+nebulaPosRandomizerY);
   }
@@ -185,18 +203,21 @@ void drawBackGround() {
   else if (nebulaRandomizer == 4 ){
     image(nebula4,nebulaPosRandomizerX,+nebulaPosRandomizerY); 
   }
+  noTint();
 }
 
 void drawHud() {
-  image(frame,width/2,height/2,width,height);
-  image(ship,140,748,40,30);
-  image(ship,190,748,40,30);
-  image(ship,240,748,40,30);
-  fill(00, 100, 00);
-  textSize(20);
-  text("Lives:", 50, 752);
-  text("Score: 000", 320, 752);
-  text("Other HUD elements.................", 450, 752);
+  textAlign(CENTER);
+  image(frame,200,108);//,width,height);
+  image(ship,50,175,40,30);
+  image(ship,125,125,40,30);
+  image(ship,200,85,40,30);
+  fill(200, 100, 00);
+  textSize(30);
+  text("00", 350, 85);
+  text("000", 125, 44);
+  text("42", 50, 85);
+  text("73", 275, 125);
 }
 
 void drawShots() {
@@ -337,6 +358,12 @@ void keyPressed() {
   }
   if (key == 'a') { 
     sLEFT=true;
+  }
+  if (key == 'f') { 
+  nebulaRandomizer =int(random(1,5));
+  backGroundRandomizer =int(random(1,6));
+  nebulaPosRandomizerX =int(random(0,width));
+  nebulaPosRandomizerY =int(random(0,height));
   }
 }
 void keyReleased() {
