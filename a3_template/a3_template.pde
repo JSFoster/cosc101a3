@@ -53,8 +53,8 @@ int score=0;
 boolean alive=true;
 
 void setup() {
-  //fullScreen();
-  size(1200, 800);
+  fullScreen();
+  //size(1200, 800);
 
   shipLoc = new PVector(width/2, height/2);
   shipVel = new PVector(0, 0); 
