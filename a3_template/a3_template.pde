@@ -52,6 +52,12 @@ float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
 int score=0;
 boolean alive=true;
 
+// Start screen bools
+boolean startScreen = true;
+boolean startButton = false;
+boolean highScoreButton = false;
+boolean exitButton = false;
+
 void setup() {
   fullScreen();
   //size(1200, 800);
@@ -106,14 +112,18 @@ void setup() {
 }
 
 void draw() {
-  drawBackGround();
-  //might be worth checking to see if you are still alive first
-  collisionDetection();
-  drawShots();
-  drawShip();
-  // report if game over or won
-  drawAstroids();
-  drawHud();// draw score
+  if (startScreen) {
+    startScreen();
+  } else {
+    drawBackGround();
+    //might be worth checking to see if you are still alive first
+    collisionDetection();
+    drawShots();
+    drawShip();
+    // report if game over or won
+    drawAstroids();
+    drawHud();// draw score
+  }
 }
 
 /**************************************************************
@@ -327,7 +337,66 @@ void collisionDetection() {
   //check if ship as collided wiht astroids
 }
 
-
+void startScreen () {
+    drawBackGround();
+    pushMatrix();
+    textAlign(CENTER);
+    rectMode(CENTER);
+    strokeWeight(3);
+    textSize(125);
+    fill(255,0,0);
+    text("ASTEROIDS", width/2, height/3);
+    textSize(70);
+    if (startButton) {
+      stroke(0,255,0);
+    } else {
+      stroke(255);
+    }
+    fill(0);
+    rect(width/2, height/3+175, 420, 100);
+    fill(255,0,0);
+    text("START", width/2, height/3 + 200);
+    if (highScoreButton) {
+      stroke(0,255,0);
+    } else {
+      stroke(255);
+    }
+    fill(0);
+    rect(width/2, height/3+325, 420, 100);
+    fill(255,0,0);
+    text("HIGHSCORE", width/2, height/3 + 350);
+    if (exitButton) {
+      stroke(0,255,0);
+    } else {
+      stroke(255);
+    }
+    fill(0);
+    rect(width/2, height/3+475, 420, 100);
+    fill(255,0,0);
+    text("EXIT", width/2, height/3 + 500);
+    popMatrix();
+    if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+125 && mouseY < height/3+225) {
+      startButton = true;
+      if (mousePressed) {
+        startScreen = false;
+      }
+    } else {
+      startButton = false;
+    }
+    if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+275 && mouseY < height/3+375) {
+      highScoreButton = true;
+    } else {
+      highScoreButton = false;
+    }
+    if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+425 && mouseY < height/3+525) {
+      exitButton = true;
+      if (mousePressed) {
+        exit();
+      }
+    } else {
+      exitButton = false;
+    }
+}
 
 void keyPressed() {
   if (key == CODED) {
