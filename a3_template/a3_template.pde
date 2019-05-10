@@ -16,7 +16,9 @@ PImage frame,ship,ufo,nebula1,nebula2,nebula3,nebula4,stars1,stars2,stars3,stars
 PShape thrust;
 int nebulaRandomizer,backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
-int astroNums=20;
+int astroNums=5;
+int bigRockSize = 50;
+int smallRockSize = 25;
 PVector[] astroids = new PVector[astroNums];
 PVector[] astroDirect = new PVector[astroNums];
 PVector[] sAstroOne = new PVector[astroNums];
@@ -52,9 +54,15 @@ float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
 int score=0;
 boolean alive=true;
 
+// Start screen bools
+boolean startScreen = true;
+boolean startButton = false;
+boolean highScoreButton = false;
+boolean exitButton = false;
+
 void setup() {
   fullScreen();
-  //size(1200, 800);
+  //size(1920, 1080);
 
   shipLoc = new PVector(width/2, height/2);
   shipVel = new PVector(0, 0); 
@@ -76,9 +84,13 @@ void setup() {
   stars4  = loadImage ("stars4.png");
   stars5  = loadImage ("stars5.png");
   rock1   = loadImage("rock1.png");
+  rock1.resize(bigRockSize,bigRockSize);
   rock2   = loadImage("rock2.png");
+  rock2.resize(smallRockSize,smallRockSize);
   rock3   = loadImage("rock3.png");
-  rock4   = loadImage("rock4.png"); 
+  rock3.resize(smallRockSize,smallRockSize);
+  rock4   = loadImage("rock4.png");
+  rock4.resize(smallRockSize,smallRockSize);
   nebulaRandomizer =int(random(1,5));
   backGroundRandomizer =int(random(1,6));
   nebulaPosRandomizerX =int(random(0,width));
@@ -100,20 +112,23 @@ void setup() {
     destroyedTwo[i] = false;
     destroyedThree[i] = false;
   }
-  hit[5] = true; //for demonstration purposes only
-  destroyedOne[5] = true; //for demonstration purposes only
+  //hit[5] = true; //for demonstration purposes only
+  //destroyedOne[5] = true; //for demonstration purposes only
   //initialise shapes if needed
 }
 
 void draw() {
-  drawBackGround();
-  //might be worth checking to see if you are still alive first
-  collisionDetection();
-  drawShots();
-  drawShip();
-  // report if game over or won
-  drawAstroids();
-  drawHud();// draw score
+  if (startScreen) {
+    startScreen();
+  } else {
+    drawBackGround();
+    //might be worth checking to see if you are still alive first
+    drawShots();
+    drawShip();
+    // report if game over or won
+    drawAstroids();
+    drawHud();// draw score
+  }
 }
 
 /**************************************************************
@@ -235,10 +250,10 @@ void drawShots() {
     timeToFire = 1;
   }
   for (int i = 0; i < shots.size(); i++) {
-    ellipse(shots.get(i).x, shots.get(i).y, 2, 2);
-    shotVel = sDirections.get(i).normalize();
-    shotVel.mult(shotSpeed);
-    shots.get(i).add(shotVel);
+      ellipse(shots.get(i).x, shots.get(i).y, 2, 2);
+      shotVel = sDirections.get(i).normalize();
+      shotVel.mult(shotSpeed);
+      shots.get(i).add(shotVel);
   }
 }
 
@@ -264,33 +279,44 @@ void drawAstroids() {
   //initial direction and location should be randomised
   //also make sure the astroid has not moved outside of the window
   for (int i = 0; i < astroNums; i ++) {
+    if(shotCollision(astroids[i].x,astroids[i].y,bigRockSize)) {
+      hit[i] = true;
+    }
     if (!hit[i]) {
       astroids[i].add(astroDirect[i]);
+      sAstroOne[i].add(astroDirect[i]);
+      sAstroTwo[i].add(astroDirect[i]);
+      sAstroThree[i].add(astroDirect[i]);
+      borderWrap(sAstroOne[i]);
+      borderWrap(sAstroTwo[i]);
+      borderWrap(sAstroThree[i]);
       borderWrap(astroids[i]);
-      //ellipse for now TODO: PImage or PShape
-      stroke(255);
-      strokeWeight(3);
-      noFill();
       image(rock1,astroids[i].x, astroids[i].y);
     }
     if (hit[i]) {
-      sAstroOne[i].add(sAstroDirectOne[i]);
-      borderWrap(sAstroOne[i]);
-      sAstroTwo[i].add(sAstroDirectTwo[i]);
-      borderWrap(sAstroTwo[i]);
-      sAstroThree[i].add(sAstroDirectThree[i]);
-      borderWrap(sAstroThree[i]);
-      stroke(255);
-      strokeWeight(3);
-      noFill();
       if (!destroyedOne[i]) {
+        sAstroOne[i].add(sAstroDirectOne[i]);
+        borderWrap(sAstroOne[i]);
         image(rock2,sAstroOne[i].x, sAstroOne[i].y);
+        if (shotCollision(sAstroOne[i].x,sAstroOne[i].y,smallRockSize)){
+          destroyedOne[i] = true;
+        }
       }
       if (!destroyedTwo[i]) {
+        sAstroTwo[i].add(sAstroDirectTwo[i]);
+        borderWrap(sAstroTwo[i]);
         image(rock3,sAstroTwo[i].x, sAstroTwo[i].y);
+        if (shotCollision(sAstroTwo[i].x,sAstroTwo[i].y,smallRockSize)){
+          destroyedTwo[i] = true;
+        }
       }
       if (!destroyedThree[i]) {
+        sAstroThree[i].add(sAstroDirectThree[i]);
+        borderWrap(sAstroThree[i]);
         image(rock4,sAstroThree[i].x, sAstroThree[i].y);
+        if (shotCollision(sAstroThree[i].x,sAstroThree[i].y,smallRockSize)){
+          destroyedThree[i] = true;
+        }
       }
     }
   }
@@ -307,18 +333,20 @@ void drawAstroids() {
  is, it is repositioned on the other side.
  
  ***************************************************************/
-
-void borderWrap(PVector stroid) {
-  if (stroid.x > width) {
-    stroid.x = 0;
-  } else if (stroid.x < 0) {
-    stroid.x = width;
-  }
-  if (stroid.y > height) {
-    stroid.y = 0;
-  } else if (stroid.y < 0) {
-    stroid.y = height;
-  }
+ 
+void borderWrap(PVector stroid){
+      if (stroid.x > width){
+        stroid.x = 0;
+      }
+      else if (stroid.x < 0){
+        stroid.x = width;
+      }
+      if (stroid.y > height){
+        stroid.y = 0;
+      }
+      else if (stroid.y < 0){
+        stroid.y = height;
+      }
 }
 
 
@@ -327,7 +355,66 @@ void collisionDetection() {
   //check if ship as collided wiht astroids
 }
 
-
+void startScreen () {
+  drawBackGround();
+  pushMatrix();
+  textAlign(CENTER);
+  rectMode(CENTER);
+  strokeWeight(3);
+  textSize(125);
+  fill(255,0,0);
+  text("ASTEROIDS", width/2, height/3);
+  textSize(70);
+  if (startButton) {
+    stroke(0,255,0);
+  } else {
+    stroke(255);
+  }
+  fill(0);
+  rect(width/2, height/3+175, 420, 100);
+  fill(255,0,0);
+  text("START", width/2, height/3 + 200);
+  if (highScoreButton) {
+    stroke(0,255,0);
+  } else {
+    stroke(255);
+  }
+  fill(0);
+  rect(width/2, height/3+325, 420, 100);
+  fill(255,0,0);
+  text("HIGHSCORE", width/2, height/3 + 350);
+  if (exitButton) {
+    stroke(0,255,0);
+  } else {
+    stroke(255);
+  }
+  fill(0);
+  rect(width/2, height/3+475, 420, 100);
+  fill(255,0,0);
+  text("EXIT", width/2, height/3 + 500);
+  popMatrix();
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+125 && mouseY < height/3+225) {
+    startButton = true;
+    if (mousePressed) {
+      startScreen = false;
+    }
+  } else {
+    startButton = false;
+  }
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+275 && mouseY < height/3+375) {
+    highScoreButton = true;
+  } else {
+    highScoreButton = false;
+  }
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+425 && mouseY < height/3+525) {
+    exitButton = true;
+    if (mousePressed) {
+      exit();
+    }
+  } else {
+    exitButton = false;
+  }
+}
 
 void keyPressed() {
   if (key == CODED) {
@@ -397,3 +484,17 @@ void keyReleased() {
     sLEFT=false;
   }
 }
+
+boolean shotCollision(float astroidX, float astroidY, int rockSize){
+  boolean collision = false;
+  rockSize/=2;
+  for (int i = 0; i < shots.size(); i++){
+    if ((shots.get(i).x >= (astroidX - rockSize)) && (shots.get(i).x <= (astroidX + rockSize)) && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))){
+      collision = true;
+      shots.remove(i);
+      sDirections.remove(i);
+    }
+  }
+  return collision;
+}
+   

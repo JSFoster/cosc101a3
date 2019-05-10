@@ -1,0 +1,9 @@
+To do/Bugs list:
+
+BUG: When not moving and shooting continuously - Shooting a big asteroid will cause subsequent bullets to cut off where that asteroid was. Only happens until you change angle of ship.
+BUG: Start screen doesn't scale. Only suitable from 1080 or higher.
+
+TODO: Ship collision
+TODO: Points/Lives
+TODO: Levels/Endgame?
+TODO: Highscores?
