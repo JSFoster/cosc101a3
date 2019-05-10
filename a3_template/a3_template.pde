@@ -12,8 +12,11 @@
  All images sourced from: https://www.kisspng.com 
  */
 
-PImage frame,ship,ufo,nebula1,nebula2,nebula3,nebula4,stars1,stars2,stars3,stars4,stars5,rock1,rock2,rock3,rock4;
-PShape thrust;
+import processing.sound.*;
+SoundFile thrustSound, laserSound, shotgunSound;
+//SoundFile music;
+
+PImage frame,hud,ship,ufo,nebula1,nebula2,nebula3,nebula4,stars1,stars2,stars3,stars4,rock1,rock2,rock3,rock4,thrust1,thrust2;
 int nebulaRandomizer,backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
 int astroNums=5;
@@ -31,12 +34,11 @@ PVector[] sAstroDirectThree = new PVector[astroNums];
 //===== ship related globals ====
 boolean sUP=false, sDOWN=false, sRIGHT=false, sLEFT=false, sSPACE=false;
 float shipAngle=radians(270); 
-float turnSpeed = 0.10;
+float turnSpeed = 0.08;
 PVector shipLoc;
 PVector shipVel;
-float shipFric = 0.98;
-int speedLimit = 6;
-float thrusterPower = 0.15;
+float shipFric = 0.986;
+int speedLimit = 7;
 float astroSpeed = 1.0;
 float sAstroSpeed = 3.0;
 boolean[] hit = new boolean [astroNums];
@@ -52,6 +54,8 @@ float fireRate = 0.1; // Adjust 0.0 - 1.0
 float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
 
 int score=0;
+int lives = 3;
+int level = 1;
 boolean alive=true;
 
 // Start screen bools
@@ -61,18 +65,20 @@ boolean highScoreButton = false;
 boolean exitButton = false;
 
 void setup() {
-  fullScreen();
-  //size(1920, 1080);
+  //fullScreen();
+  size(1440, 900);
 
   shipLoc = new PVector(width/2, height/2);
   shipVel = new PVector(0, 0); 
   noFill();
   stroke(255);
-  thrust = createShape(TRIANGLE, -25, 0, -15, -5, -15, 5);
   
   imageMode(CENTER);
   frame   = loadImage("frame.png");
+  hud     = loadImage("hud.png");
   ship    = loadImage("ship.png");
+  thrust1 = loadImage("thrust1.png");
+  thrust2 = loadImage("thrust2.png");
   ufo     = loadImage ("ufo.png");
   nebula1 = loadImage ("nebula1.png");
   nebula2 = loadImage ("nebula2.png");
@@ -82,7 +88,6 @@ void setup() {
   stars2  = loadImage ("stars2.png");
   stars3  = loadImage ("stars3.png");
   stars4  = loadImage ("stars4.png");
-  stars5  = loadImage ("stars5.png");
   rock1   = loadImage("rock1.png");
   rock1.resize(bigRockSize,bigRockSize);
   rock2   = loadImage("rock2.png");
@@ -92,9 +97,14 @@ void setup() {
   rock4   = loadImage("rock4.png");
   rock4.resize(smallRockSize,smallRockSize);
   nebulaRandomizer =int(random(1,5));
-  backGroundRandomizer =int(random(1,6));
+  backGroundRandomizer =int(random(1,5));
   nebulaPosRandomizerX =int(random(0,width));
   nebulaPosRandomizerY =int(random(0,height));
+  
+  thrustSound =    new SoundFile(this, "thrust.mp3");
+  laserSound =     new SoundFile(this, "laser.mp3");
+  shotgunSound =   new SoundFile(this, "shotgun.mp3");
+  //music        =   new SoundFile(this, "music.mp3");
 
   //initialise pvtecotrs
   //random astroid initial positions and directions;
@@ -146,9 +156,9 @@ void draw() {
 
 void moveShip() {
 
-  if (shipLoc.y < 0) { 
+  if (shipLoc.y < 0) {       //border wraps
     shipLoc.y = height;
-  }            //border wraps
+  }           
   if (shipLoc.y > height) { 
     shipLoc.y = 0;
   }
@@ -160,9 +170,12 @@ void moveShip() {
   }
 
   if (sUP) { 
-    shipVel.add(PVector.fromAngle(shipAngle));
-  }           //speed up
-  //if(sDOWN){  shipVel.y = shipVel.y+shipAcc.y; }  // brakes are for girls
+    shipVel.add(PVector.fromAngle(shipAngle));    //speed up
+    if ( thrustSound.isPlaying()== false )thrustSound.play();
+  }           
+  if(!sUP && thrustSound.isPlaying()== true ){
+    thrustSound.stop();
+  }
   if (sRIGHT) { 
     shipAngle = shipAngle+turnSpeed;
   } 
@@ -170,27 +183,32 @@ void moveShip() {
     shipAngle = shipAngle-turnSpeed;
   }
 
-  shipVel.mult(shipFric);         // slow down
+  shipVel.mult(shipFric);  // slow down
   shipVel.limit(speedLimit);      // limit speed
   shipLoc.add(shipVel);           // change ship location
 }
 
 void drawShip() {
   moveShip();
-
   pushMatrix();    
   translate(shipLoc.x, shipLoc.y);
-  rotate(shipAngle);
-  image(ship, 0, 0); 
+  rotate(shipAngle+PI/2);
   if (sUP) {
-    shape(thrust, 0, 0);
-  } 
+    if(frameCount % 2 == 0 ){
+      image(thrust1, 0, 35);
+    }
+    else {
+      image(thrust2, 0, 35);
+    }
+  }
+  image(ship, 0, 0); 
   popMatrix();
 }
 
 void drawBackGround() {
   background(0);
   tint(90);
+  println(backGroundRandomizer,nebulaRandomizer);
   if (backGroundRandomizer == 1 ){
     image(stars1,width/2,height/2);
   }
@@ -202,9 +220,6 @@ void drawBackGround() {
   }
   else if (backGroundRandomizer == 4 ){
     image(stars4,width/2,height/2);
-  }
-  else if (backGroundRandomizer == 5 ){
-    image(stars5,width/2,height/2);
   }
   if (nebulaRandomizer == 1 ){
     image(nebula1,nebulaPosRandomizerX,+nebulaPosRandomizerY);
@@ -222,17 +237,37 @@ void drawBackGround() {
 }
 
 void drawHud() {
+  image(frame,width/2,height/2);
+  
+  pushMatrix();    
+  translate(175, height-150);
+  
   textAlign(CENTER);
-  image(frame,200,108);//,width,height);
-  image(ship,50,175,40,30);
-  image(ship,125,125,40,30);
-  image(ship,200,85,40,30);
+  image(hud,0,0);
+  if (lives > 0){
+    image(ship,-102,-67,23,35);
+  }
+  if (lives > 1){
+    image(ship,-80,-67,23,35);
+  }
+    if (lives > 2){
+    image(ship,-58,-67,23,35);
+  }
   fill(200, 100, 00);
-  textSize(30);
-  text("00", 350, 85);
-  text("000", 125, 44);
-  text("42", 50, 85);
-  text("73", 275, 125);
+  textSize(22);
+  text("Score", -80, 15);
+  text(score, -80, 45);
+  text("Level", -7, 58);
+  text(level, -7, 88);
+  
+  if ( 1 == 1 ){
+    image(rock3,-5,-18,40,40); // powerup placeholder
+  }
+  if ( 1 == 1 ){
+    image(rock4,70,25,40,40); // powerup placeholder
+  }
+  
+  popMatrix();
 }
 
 void drawShots() {
@@ -245,6 +280,7 @@ void drawShots() {
       shots.add(new PVector(shipLoc.x, shipLoc.y));
       sDirections.add(PVector.fromAngle(shipAngle));
       timeToFire = 0;
+      laserSound.play();
     }
   } else if (!sSPACE) {
     timeToFire = 1;
@@ -357,6 +393,7 @@ void collisionDetection() {
 
 void startScreen () {
   drawBackGround();
+  image(frame,width/2,height/2);
   pushMatrix();
   textAlign(CENTER);
   rectMode(CENTER);
@@ -448,7 +485,7 @@ void keyPressed() {
   }
   if (key == 'f') { 
   nebulaRandomizer =int(random(1,5));
-  backGroundRandomizer =int(random(1,6));
+  backGroundRandomizer =int(random(1,5));
   nebulaPosRandomizerX =int(random(0,width));
   nebulaPosRandomizerY =int(random(0,height));
   }
