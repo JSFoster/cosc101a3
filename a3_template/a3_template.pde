@@ -16,7 +16,9 @@ import processing.sound.*;
 SoundFile thrustSound, laserSound, shotgunSound;
 //SoundFile music;
 
-PImage frame,hud,ship,ufo,nebula1,nebula2,nebula3,nebula4,stars1,stars2,stars3,stars4,rock1,rock2,rock3,rock4,thrust1,thrust2;
+PImage frame,hud,ship,ufo,nebula1,nebula2,nebula3,nebula4,
+          stars1,stars2,stars3,stars4,rock1,rock2,rock3,rock4,
+          thrust1,thrust2;
 int nebulaRandomizer,backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
 int astroNums=5;
@@ -39,6 +41,7 @@ PVector shipLoc;
 PVector shipVel;
 float shipFric = 0.986;
 int speedLimit = 7;
+
 float astroSpeed = 1.0;
 float sAstroSpeed = 3.0;
 boolean[] hit = new boolean [astroNums];
@@ -67,6 +70,10 @@ boolean exitButton = false;
 void setup() {
   //fullScreen();
   size(1440, 900);
+  //size(800, 600);
+
+  bigRockSize = width/12;  // if we are going to use scaling here, this has to be after fullscreen is called
+  smallRockSize = width/24;
 
   shipLoc = new PVector(width/2, height/2);
   shipVel = new PVector(0, 0); 
@@ -75,6 +82,7 @@ void setup() {
   
   imageMode(CENTER);
   frame   = loadImage("frame.png");
+  frame.resize(width,height);
   hud     = loadImage("hud.png");
   ship    = loadImage("ship.png");
   thrust1 = loadImage("thrust1.png");
@@ -85,9 +93,13 @@ void setup() {
   nebula3 = loadImage ("nebula3.png");
   nebula4 = loadImage ("nebula4.png");
   stars1  = loadImage ("stars1.png");
+  stars1.resize(width,height);
   stars2  = loadImage ("stars2.png");
+  stars2.resize(width,height);
   stars3  = loadImage ("stars3.png");
+  stars3.resize(width,height);
   stars4  = loadImage ("stars4.png");
+  stars4.resize(width,height);
   rock1   = loadImage("rock1.png");
   rock1.resize(bigRockSize,bigRockSize);
   rock2   = loadImage("rock2.png");
@@ -137,7 +149,7 @@ void draw() {
     drawShip();
     // report if game over or won
     drawAstroids();
-    drawHud();// draw score
+    drawHud();
   }
 }
 
@@ -168,7 +180,7 @@ void moveShip() {
   if (shipLoc.x > width) { 
     shipLoc.x = 0;
   }
-
+  
   if (sUP) { 
     shipVel.add(PVector.fromAngle(shipAngle));    //speed up
     if ( thrustSound.isPlaying()== false )thrustSound.play();
@@ -176,6 +188,7 @@ void moveShip() {
   if(!sUP && thrustSound.isPlaying()== true ){
     thrustSound.stop();
   }
+  
   if (sRIGHT) { 
     shipAngle = shipAngle+turnSpeed;
   } 
@@ -207,8 +220,7 @@ void drawShip() {
 
 void drawBackGround() {
   background(0);
-  tint(90);
-  println(backGroundRandomizer,nebulaRandomizer);
+  tint(92);
   if (backGroundRandomizer == 1 ){
     image(stars1,width/2,height/2);
   }
@@ -488,6 +500,7 @@ void keyPressed() {
   backGroundRandomizer =int(random(1,5));
   nebulaPosRandomizerX =int(random(0,width));
   nebulaPosRandomizerY =int(random(0,height));
+  level++;
   }
 }
 void keyReleased() {
@@ -530,6 +543,7 @@ boolean shotCollision(float astroidX, float astroidY, int rockSize){
       collision = true;
       shots.remove(i);
       sDirections.remove(i);
+      score++;
     }
   }
   return collision;
