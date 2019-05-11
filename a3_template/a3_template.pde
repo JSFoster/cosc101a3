@@ -9,16 +9,21 @@
  * Notes: If any third party items are use they need to be credited (don't use anything with copyright - unless you have permission)
  * ...
  **************************************************************
+ sound effects sourced from: https://freesound.org
  All images sourced from: https://www.kisspng.com 
  */
 
 import processing.sound.*;
-SoundFile thrustSound, laserSound, shotgunSound;
+SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound,
+            biggerBoomSound, deepBoomSound, laser2Sound, bigGunSound;
+
 //SoundFile music;
 
 PImage frame,hud,ship,ufo,nebula1,nebula2,nebula3,nebula4,
           stars1,stars2,stars3,stars4,rock1,rock2,rock3,rock4,
           thrust1,thrust2;
+PImage[] explosionImages;
+int[] explosionsList = {};
 int nebulaRandomizer,backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
 int astroNums=5;
@@ -112,11 +117,19 @@ void setup() {
   backGroundRandomizer =int(random(1,5));
   nebulaPosRandomizerX =int(random(0,width));
   nebulaPosRandomizerY =int(random(0,height));
+  explosionImages = new PImage[17];
+  createExplosionImageArray();
   
-  thrustSound =    new SoundFile(this, "thrust.mp3");
-  laserSound =     new SoundFile(this, "laser.mp3");
-  shotgunSound =   new SoundFile(this, "shotgun.mp3");
-  //music        =   new SoundFile(this, "music.mp3");
+  thrustSound     = new SoundFile(this, "thrust.mp3");
+  laserSound      = new SoundFile(this, "laser.mp3");
+  shotgunSound    = new SoundFile(this, "ding.mp3");
+  dingSound       = new SoundFile(this, "boom.mp3");
+  boomSound       = new SoundFile(this, "boom.mp3");
+  biggerBoomSound = new SoundFile(this, "biggerBoom.mp3");
+  deepBoomSound   = new SoundFile(this, "deepBoom.mp3");
+  laser2Sound     = new SoundFile(this, "laser2.mp3");
+  bigGunSound     = new SoundFile(this, "bigGun.mp3");
+  //music   =    new SoundFile(this, "music.mp3");
 
   //initialise pvtecotrs
   //random astroid initial positions and directions;
@@ -149,6 +162,7 @@ void draw() {
     drawShip();
     // report if game over or won
     drawAstroids();
+    drawexplosions();
     drawHud();
   }
 }
@@ -280,6 +294,24 @@ void drawHud() {
   }
   
   popMatrix();
+}
+
+void createExplosionImageArray() {
+  for (int i = 1; i <= 17; i++) {
+    String str = "explosion/" +i +".gif";
+    explosionImages[i-1] = loadImage(str);
+  }
+}
+
+void drawexplosions() {
+  for (int i = 0; i <= explosionsList.length-1; i=i+3) {
+    if (explosionsList[i]<17) {
+      image(explosionImages[explosionsList[i]], explosionsList[i+1], explosionsList[i+2]);
+      if (frameCount % 2 == 0) {
+        explosionsList[i] = explosionsList[i]+1;
+      }
+    }
+  }
 }
 
 void drawShots() {
@@ -501,6 +533,9 @@ void keyPressed() {
   nebulaPosRandomizerX =int(random(0,width));
   nebulaPosRandomizerY =int(random(0,height));
   level++;
+      explosionsList = append(explosionsList, 0);
+      explosionsList = append(explosionsList, mouseX);
+      explosionsList = append(explosionsList, mouseY);
   }
 }
 void keyReleased() {
@@ -544,6 +579,11 @@ boolean shotCollision(float astroidX, float astroidY, int rockSize){
       shots.remove(i);
       sDirections.remove(i);
       score++;
+      explosionsList = append(explosionsList, 0);
+      explosionsList = append(explosionsList, int(astroidX));
+      explosionsList = append(explosionsList, int(astroidY));
+      //if ( boomSound.isPlaying()== false )
+      boomSound.play();
     }
   }
   return collision;
