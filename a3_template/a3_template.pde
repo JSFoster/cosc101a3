@@ -14,17 +14,15 @@
  */
 
 import processing.sound.*;
-SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound,
-            biggerBoomSound, deepBoomSound, laser2Sound, bigGunSound;
+SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound, 
+  biggerBoomSound, deepBoomSound, laser2Sound, bigGunSound;
 
 //SoundFile music;
 
-PImage frame,hud,ship,ufo,nebula1,nebula2,nebula3,nebula4,
-          stars1,stars2,stars3,stars4,rock1,rock2,rock3,rock4,
-          thrust1,thrust2;
-PImage[] explosionImages;
+PImage frame, hud, ship, ufo, thrust1, thrust2;
+PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
 int[] explosionsList = {};
-int nebulaRandomizer,backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
+int nebulaRandomizer, backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
 int astroNums=5;
 int bigRockSize = 50;
@@ -42,8 +40,7 @@ PVector[] sAstroDirectThree = new PVector[astroNums];
 boolean sUP=false, sDOWN=false, sRIGHT=false, sLEFT=false, sSPACE=false;
 float shipAngle=radians(270); 
 float turnSpeed = 0.08;
-PVector shipLoc;
-PVector shipVel;
+PVector shipLoc, shipVel;
 float shipFric = 0.986;
 int speedLimit = 7;
 
@@ -84,42 +81,26 @@ void setup() {
   shipVel = new PVector(0, 0); 
   noFill();
   stroke(255);
-  
+
   imageMode(CENTER);
   frame   = loadImage("frame.png");
-  frame.resize(width,height);
+  frame.resize(width, height);
   hud     = loadImage("hud.png");
   ship    = loadImage("ship.png");
   thrust1 = loadImage("thrust1.png");
   thrust2 = loadImage("thrust2.png");
   ufo     = loadImage ("ufo.png");
-  nebula1 = loadImage ("nebula1.png");
-  nebula2 = loadImage ("nebula2.png");
-  nebula3 = loadImage ("nebula3.png");
-  nebula4 = loadImage ("nebula4.png");
-  stars1  = loadImage ("stars1.png");
-  stars1.resize(width,height);
-  stars2  = loadImage ("stars2.png");
-  stars2.resize(width,height);
-  stars3  = loadImage ("stars3.png");
-  stars3.resize(width,height);
-  stars4  = loadImage ("stars4.png");
-  stars4.resize(width,height);
-  rock1   = loadImage("rock1.png");
-  rock1.resize(bigRockSize,bigRockSize);
-  rock2   = loadImage("rock2.png");
-  rock2.resize(smallRockSize,smallRockSize);
-  rock3   = loadImage("rock3.png");
-  rock3.resize(smallRockSize,smallRockSize);
-  rock4   = loadImage("rock4.png");
-  rock4.resize(smallRockSize,smallRockSize);
-  nebulaRandomizer =int(random(1,5));
-  backGroundRandomizer =int(random(1,5));
-  nebulaPosRandomizerX =int(random(0,width));
-  nebulaPosRandomizerY =int(random(0,height));
-  explosionImages = new PImage[17];
-  createExplosionImageArray();
-  
+
+  nebulaRandomizer     =int(random(0, 4));
+  backGroundRandomizer =int(random(0, 4));
+  nebulaPosRandomizerX =int(random(0, width));
+  nebulaPosRandomizerY =-350;
+  explosionImages  = new PImage[17];
+  backGroundImages = new PImage[4];
+  nebulaImages     = new PImage[4];
+  rockImages       = new PImage[4];
+  createImageArrays();
+
   thrustSound     = new SoundFile(this, "thrust.mp3");
   laserSound      = new SoundFile(this, "laser.mp3");
   shotgunSound    = new SoundFile(this, "ding.mp3");
@@ -162,7 +143,7 @@ void draw() {
     drawShip();
     // report if game over or won
     drawAstroids();
-    drawexplosions();
+    drawExplosions();
     drawHud();
   }
 }
@@ -194,15 +175,15 @@ void moveShip() {
   if (shipLoc.x > width) { 
     shipLoc.x = 0;
   }
-  
+
   if (sUP) { 
     shipVel.add(PVector.fromAngle(shipAngle));    //speed up
     if ( thrustSound.isPlaying()== false )thrustSound.play();
   }           
-  if(!sUP && thrustSound.isPlaying()== true ){
+  if (!sUP && thrustSound.isPlaying()== true ) {
     thrustSound.stop();
   }
-  
+
   if (sRIGHT) { 
     shipAngle = shipAngle+turnSpeed;
   } 
@@ -221,10 +202,9 @@ void drawShip() {
   translate(shipLoc.x, shipLoc.y);
   rotate(shipAngle+PI/2);
   if (sUP) {
-    if(frameCount % 2 == 0 ){
+    if (frameCount % 2 == 0 ) {
       image(thrust1, 0, 35);
-    }
-    else {
+    } else {
       image(thrust2, 0, 35);
     }
   }
@@ -234,50 +214,34 @@ void drawShip() {
 
 void drawBackGround() {
   background(0);
-  tint(92);
-  if (backGroundRandomizer == 1 ){
-    image(stars1,width/2,height/2);
+  tint(95);
+  image(backGroundImages[backGroundRandomizer], width/2, height/2);
+  if (nebulaPosRandomizerY > height+350) {
+    nebulaPosRandomizerY = -350;
+    nebulaRandomizer =int(random(0, 4));
+    nebulaPosRandomizerX =int(random(0, width));
   }
-  else if (backGroundRandomizer == 2 ){
-    image(stars2,width/2,height/2); 
-  }
-  else if (backGroundRandomizer == 3 ){
-    image(stars3,width/2,height/2); 
-  }
-  else if (backGroundRandomizer == 4 ){
-    image(stars4,width/2,height/2);
-  }
-  if (nebulaRandomizer == 1 ){
-    image(nebula1,nebulaPosRandomizerX,+nebulaPosRandomizerY);
-  }
-  else if (nebulaRandomizer == 2 ){
-    image(nebula2,nebulaPosRandomizerX,+nebulaPosRandomizerY); 
-  }
-  else if (nebulaRandomizer == 3 ){
-    image(nebula3,nebulaPosRandomizerX,+nebulaPosRandomizerY); 
-  }
-  else if (nebulaRandomizer == 4 ){
-    image(nebula4,nebulaPosRandomizerX,+nebulaPosRandomizerY); 
-  }
+  tint(75);
+  image(nebulaImages[nebulaRandomizer], nebulaPosRandomizerX, nebulaPosRandomizerY++);
   noTint();
 }
 
 void drawHud() {
-  image(frame,width/2,height/2);
-  
+  image(frame, width/2, height/2);
+
   pushMatrix();    
   translate(175, height-150);
-  
+
   textAlign(CENTER);
-  image(hud,0,0);
-  if (lives > 0){
-    image(ship,-102,-67,23,35);
+  image(hud, 0, 0);
+  if (lives > 0) {
+    image(ship, -102, -67, 23, 35);
   }
-  if (lives > 1){
-    image(ship,-80,-67,23,35);
+  if (lives > 1) {
+    image(ship, -80, -67, 23, 35);
   }
-    if (lives > 2){
-    image(ship,-58,-67,23,35);
+  if (lives > 2) {
+    image(ship, -58, -67, 23, 35);
   }
   fill(200, 100, 00);
   textSize(22);
@@ -285,25 +249,48 @@ void drawHud() {
   text(score, -80, 45);
   text("Level", -7, 58);
   text(level, -7, 88);
-  
-  if ( 1 == 1 ){
-    image(rock3,-5,-18,40,40); // powerup placeholder
+
+  if ( 1 == 1 ) {
+    image(rockImages[2], -5, -18, 40, 40); // powerup placeholder
   }
-  if ( 1 == 1 ){
-    image(rock4,70,25,40,40); // powerup placeholder
+  if ( 1 == 1 ) {
+    image(rockImages[3], 70, 25, 40, 40); // powerup placeholder
   }
-  
+
   popMatrix();
 }
 
-void createExplosionImageArray() {
+void createImageArrays() {
+
+  //explosion
   for (int i = 1; i <= 17; i++) {
     String str = "explosion/" +i +".gif";
     explosionImages[i-1] = loadImage(str);
   }
+  //BackGrounds
+  for (int i = 1; i <= 4; i++) {
+    String str = "stars" +i +".png";
+    backGroundImages[i-1] = loadImage(str);
+    backGroundImages[i-1].resize(width, height);
+  }
+  //nebula
+  for (int i = 1; i <= 4; i++) {
+    String str = "nebula" +i +".png";
+    nebulaImages[i-1] = loadImage(str);
+  }
+  //rocks
+  for (int i = 1; i <= 4; i++) {
+    String str = "rock" +i +".png";
+    rockImages[i-1] = loadImage(str);
+    if (i==1) {
+      rockImages[i-1].resize(bigRockSize, bigRockSize);
+    } else {
+      rockImages[i-1].resize(smallRockSize, smallRockSize);
+    }
+  }
 }
 
-void drawexplosions() {
+void drawExplosions() {
   for (int i = 0; i <= explosionsList.length-1; i=i+3) {
     if (explosionsList[i]<17) {
       image(explosionImages[explosionsList[i]], explosionsList[i+1], explosionsList[i+2]);
@@ -312,6 +299,44 @@ void drawexplosions() {
       }
     }
   }
+}
+
+/**************************************************************
+ * Function: cleanArray()
+ * Parameters: None
+ * Returns: Void
+ 
+ * Desc: This is a tricky little devil, Loops through arrays
+ making a copy as it goes, when it finds an expired value 
+ ( end of animation for example ) It does not copy the associated 
+ values ( co-ords ). It then overwrites the old array with the
+ values of the new one.
+ effectivly removing a group of values from an array
+ 
+ ***************************************************************/
+
+void cleanArray() {
+  int[] explosionsListTemp = new int[0];
+  for (int i = 0; i <= explosionsList.length-1; i=i+3) {
+    if (explosionsList[i] < 17) {
+      explosionsListTemp = append(explosionsListTemp, explosionsList[i]);
+      explosionsListTemp = append(explosionsListTemp, explosionsList[i+1]);
+      explosionsListTemp = append(explosionsListTemp, explosionsList[i+2]);
+    }
+  }
+  explosionsList = explosionsListTemp;  
+
+  /*
+  int[] explosionsListTemp = new int[0];
+   for (int i = 0; i <= explosionsList.length-1; i=i+3) {
+   if (explosionsList[i] < 17) {
+     explosionsListTemp = append(explosionsListTemp, explosionsList[i]);
+     explosionsListTemp = append(explosionsListTemp, explosionsList[i+1]);
+     explosionsListTemp = append(explosionsListTemp, explosionsList[i+2]);
+     }
+   }
+   explosionsList = explosionsListTemp; 
+   */
 }
 
 void drawShots() {
@@ -330,10 +355,10 @@ void drawShots() {
     timeToFire = 1;
   }
   for (int i = 0; i < shots.size(); i++) {
-      ellipse(shots.get(i).x, shots.get(i).y, 2, 2);
-      shotVel = sDirections.get(i).normalize();
-      shotVel.mult(shotSpeed);
-      shots.get(i).add(shotVel);
+    ellipse(shots.get(i).x, shots.get(i).y, 2, 2);
+    shotVel = sDirections.get(i).normalize();
+    shotVel.mult(shotSpeed);
+    shots.get(i).add(shotVel);
   }
 }
 
@@ -359,7 +384,7 @@ void drawAstroids() {
   //initial direction and location should be randomised
   //also make sure the astroid has not moved outside of the window
   for (int i = 0; i < astroNums; i ++) {
-    if(shotCollision(astroids[i].x,astroids[i].y,bigRockSize)) {
+    if (shotCollision(astroids[i].x, astroids[i].y, bigRockSize)) {
       hit[i] = true;
     }
     if (!hit[i]) {
@@ -371,30 +396,30 @@ void drawAstroids() {
       borderWrap(sAstroTwo[i]);
       borderWrap(sAstroThree[i]);
       borderWrap(astroids[i]);
-      image(rock1,astroids[i].x, astroids[i].y);
+      image(rockImages[0], astroids[i].x, astroids[i].y);
     }
     if (hit[i]) {
       if (!destroyedOne[i]) {
         sAstroOne[i].add(sAstroDirectOne[i]);
         borderWrap(sAstroOne[i]);
-        image(rock2,sAstroOne[i].x, sAstroOne[i].y);
-        if (shotCollision(sAstroOne[i].x,sAstroOne[i].y,smallRockSize)){
+        image(rockImages[1], sAstroOne[i].x, sAstroOne[i].y);
+        if (shotCollision(sAstroOne[i].x, sAstroOne[i].y, smallRockSize)) {
           destroyedOne[i] = true;
         }
       }
       if (!destroyedTwo[i]) {
         sAstroTwo[i].add(sAstroDirectTwo[i]);
         borderWrap(sAstroTwo[i]);
-        image(rock3,sAstroTwo[i].x, sAstroTwo[i].y);
-        if (shotCollision(sAstroTwo[i].x,sAstroTwo[i].y,smallRockSize)){
+        image(rockImages[2], sAstroTwo[i].x, sAstroTwo[i].y);
+        if (shotCollision(sAstroTwo[i].x, sAstroTwo[i].y, smallRockSize)) {
           destroyedTwo[i] = true;
         }
       }
       if (!destroyedThree[i]) {
         sAstroThree[i].add(sAstroDirectThree[i]);
         borderWrap(sAstroThree[i]);
-        image(rock4,sAstroThree[i].x, sAstroThree[i].y);
-        if (shotCollision(sAstroThree[i].x,sAstroThree[i].y,smallRockSize)){
+        image(rockImages[3], sAstroThree[i].x, sAstroThree[i].y);
+        if (shotCollision(sAstroThree[i].x, sAstroThree[i].y, smallRockSize)) {
           destroyedThree[i] = true;
         }
       }
@@ -413,20 +438,18 @@ void drawAstroids() {
  is, it is repositioned on the other side.
  
  ***************************************************************/
- 
-void borderWrap(PVector stroid){
-      if (stroid.x > width){
-        stroid.x = 0;
-      }
-      else if (stroid.x < 0){
-        stroid.x = width;
-      }
-      if (stroid.y > height){
-        stroid.y = 0;
-      }
-      else if (stroid.y < 0){
-        stroid.y = height;
-      }
+
+void borderWrap(PVector stroid) {
+  if (stroid.x > width) {
+    stroid.x = 0;
+  } else if (stroid.x < 0) {
+    stroid.x = width;
+  }
+  if (stroid.y > height) {
+    stroid.y = 0;
+  } else if (stroid.y < 0) {
+    stroid.y = height;
+  }
 }
 
 
@@ -437,41 +460,41 @@ void collisionDetection() {
 
 void startScreen () {
   drawBackGround();
-  image(frame,width/2,height/2);
+  image(frame, width/2, height/2);
   pushMatrix();
   textAlign(CENTER);
   rectMode(CENTER);
   strokeWeight(3);
   textSize(125);
-  fill(255,0,0);
+  fill(255, 0, 0);
   text("ASTEROIDS", width/2, height/3);
   textSize(70);
   if (startButton) {
-    stroke(0,255,0);
+    stroke(0, 255, 0);
   } else {
     stroke(255);
   }
   fill(0);
   rect(width/2, height/3+175, 420, 100);
-  fill(255,0,0);
+  fill(255, 0, 0);
   text("START", width/2, height/3 + 200);
   if (highScoreButton) {
-    stroke(0,255,0);
+    stroke(0, 255, 0);
   } else {
     stroke(255);
   }
   fill(0);
   rect(width/2, height/3+325, 420, 100);
-  fill(255,0,0);
+  fill(255, 0, 0);
   text("HIGHSCORE", width/2, height/3 + 350);
   if (exitButton) {
-    stroke(0,255,0);
+    stroke(0, 255, 0);
   } else {
     stroke(255);
   }
   fill(0);
   rect(width/2, height/3+475, 420, 100);
-  fill(255,0,0);
+  fill(255, 0, 0);
   text("EXIT", width/2, height/3 + 500);
   popMatrix();
   if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+125 && mouseY < height/3+225) {
@@ -528,14 +551,11 @@ void keyPressed() {
     sLEFT=true;
   }
   if (key == 'f') { 
-  nebulaRandomizer =int(random(1,5));
-  backGroundRandomizer =int(random(1,5));
-  nebulaPosRandomizerX =int(random(0,width));
-  nebulaPosRandomizerY =int(random(0,height));
-  level++;
-      explosionsList = append(explosionsList, 0);
-      explosionsList = append(explosionsList, mouseX);
-      explosionsList = append(explosionsList, mouseY);
+    backGroundRandomizer =int(random(0, 4));
+    level++;
+    println("Active Explosions");
+    println(explosionsList);
+    cleanArray();
   }
 }
 void keyReleased() {
@@ -570,11 +590,11 @@ void keyReleased() {
   }
 }
 
-boolean shotCollision(float astroidX, float astroidY, int rockSize){
+boolean shotCollision(float astroidX, float astroidY, int rockSize) {
   boolean collision = false;
   rockSize/=2;
-  for (int i = 0; i < shots.size(); i++){
-    if ((shots.get(i).x >= (astroidX - rockSize)) && (shots.get(i).x <= (astroidX + rockSize)) && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))){
+  for (int i = 0; i < shots.size(); i++) {
+    if ((shots.get(i).x >= (astroidX - rockSize)) && (shots.get(i).x <= (astroidX + rockSize)) && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))) {
       collision = true;
       shots.remove(i);
       sDirections.remove(i);
@@ -588,4 +608,3 @@ boolean shotCollision(float astroidX, float astroidY, int rockSize){
   }
   return collision;
 }
-   
