@@ -57,11 +57,13 @@ PVector shotVel;
 float shotSpeed = 25;
 float fireRate = 0.1; // Adjust 0.0 - 1.0
 float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
+PImage bullet;
 
 int score=0;
 int lives = 3;
 int level = 1;
-boolean alive=true;
+boolean playerAlive = true;
+//boolean alive=true;
 
 // Start screen bools
 boolean startScreen = true;
@@ -131,6 +133,16 @@ void setup() {
   //hit[5] = true; //for demonstration purposes only
   //destroyedOne[5] = true; //for demonstration purposes only
   //initialise shapes if needed
+  
+  // Create bullet graphic.
+  PGraphics pg = createGraphics(10, 10);
+  pg.beginDraw();
+  pg.strokeWeight(2);
+  pg.stroke(0,255,0);
+  pg.ellipse(5, 5, 5, 5);
+  pg.filter(BLUR,2);
+  pg.endDraw();
+  bullet = pg.get();
 }
 
 void draw() {
@@ -138,7 +150,7 @@ void draw() {
     startScreen();
   } else {
     drawBackGround();
-    //might be worth checking to see if you are still alive first
+    collisionDetection();
     drawShots();
     drawShip();
     // report if game over or won
@@ -197,19 +209,23 @@ void moveShip() {
 }
 
 void drawShip() {
-  moveShip();
-  pushMatrix();    
-  translate(shipLoc.x, shipLoc.y);
-  rotate(shipAngle+PI/2);
-  if (sUP) {
-    if (frameCount % 2 == 0 ) {
-      image(thrust1, 0, 35);
-    } else {
-      image(thrust2, 0, 35);
+  if (playerAlive) {
+    moveShip();
+    pushMatrix();    
+    translate(shipLoc.x, shipLoc.y);
+    rotate(shipAngle+PI/2);
+    if (sUP) {
+      if (frameCount % 2 == 0 ) {
+        image(thrust1, 0, 35);
+      } else {
+        image(thrust2, 0, 35);
+      }
     }
+    image(ship, 0, 0); 
+    popMatrix();
+  } else {
+    lifeLost();
   }
-  image(ship, 0, 0); 
-  popMatrix();
 }
 
 void drawBackGround() {
@@ -355,7 +371,7 @@ void drawShots() {
     timeToFire = 1;
   }
   for (int i = 0; i < shots.size(); i++) {
-    ellipse(shots.get(i).x, shots.get(i).y, 2, 2);
+    image(bullet, shots.get(i).x, shots.get(i).y);
     shotVel = sDirections.get(i).normalize();
     shotVel.mult(shotSpeed);
     shots.get(i).add(shotVel);
@@ -384,7 +400,7 @@ void drawAstroids() {
   //initial direction and location should be randomised
   //also make sure the astroid has not moved outside of the window
   for (int i = 0; i < astroNums; i ++) {
-    if (shotCollision(astroids[i].x, astroids[i].y, bigRockSize)) {
+    if (shotCollision(astroids[i].x, astroids[i].y, bigRockSize, hit[i])) {
       hit[i] = true;
     }
     if (!hit[i]) {
@@ -403,7 +419,7 @@ void drawAstroids() {
         sAstroOne[i].add(sAstroDirectOne[i]);
         borderWrap(sAstroOne[i]);
         image(rockImages[1], sAstroOne[i].x, sAstroOne[i].y);
-        if (shotCollision(sAstroOne[i].x, sAstroOne[i].y, smallRockSize)) {
+        if (shotCollision(sAstroOne[i].x, sAstroOne[i].y, smallRockSize, destroyedOne[i])) {
           destroyedOne[i] = true;
         }
       }
@@ -411,7 +427,7 @@ void drawAstroids() {
         sAstroTwo[i].add(sAstroDirectTwo[i]);
         borderWrap(sAstroTwo[i]);
         image(rockImages[2], sAstroTwo[i].x, sAstroTwo[i].y);
-        if (shotCollision(sAstroTwo[i].x, sAstroTwo[i].y, smallRockSize)) {
+        if (shotCollision(sAstroTwo[i].x, sAstroTwo[i].y, smallRockSize, destroyedTwo[i])) {
           destroyedTwo[i] = true;
         }
       }
@@ -419,7 +435,7 @@ void drawAstroids() {
         sAstroThree[i].add(sAstroDirectThree[i]);
         borderWrap(sAstroThree[i]);
         image(rockImages[3], sAstroThree[i].x, sAstroThree[i].y);
-        if (shotCollision(sAstroThree[i].x, sAstroThree[i].y, smallRockSize)) {
+        if (shotCollision(sAstroThree[i].x, sAstroThree[i].y, smallRockSize, destroyedThree[i])) {
           destroyedThree[i] = true;
         }
       }
@@ -454,8 +470,25 @@ void borderWrap(PVector stroid) {
 
 
 void collisionDetection() {
-  //check if shots have collided with astroids
-  //check if ship as collided wiht astroids
+  if (playerAlive) {
+    for (int i = 0; i < astroNums; i ++) {
+      if ((dist(shipLoc.x, shipLoc.y, astroids[i].x, astroids[i].y) < bigRockSize/2 + ship.width/2 && !hit[i]) ||
+          (dist(shipLoc.x, shipLoc.y, sAstroOne[i].x, sAstroOne[i].y) < smallRockSize/2 + ship.width/2 && !destroyedOne[i]) ||
+          (dist(shipLoc.x, shipLoc.y, sAstroTwo[i].x, sAstroTwo[i].y) < smallRockSize/2 + ship.width/2 && !destroyedTwo[i]) ||
+          (dist(shipLoc.x, shipLoc.y, sAstroThree[i].x, sAstroThree[i].y) < smallRockSize/2 + ship.width/2 && !destroyedThree[i])) {
+        playerAlive = false;
+        hit[i] = true;
+      }
+    }
+  }
+}
+
+void lifeLost() {
+  lives--;
+  shipLoc = new PVector(width/2, height/2);
+  shipVel = new PVector(0, 0);
+  playerAlive = true;
+  shipAngle=radians(270); 
 }
 
 void startScreen () {
@@ -590,20 +623,22 @@ void keyReleased() {
   }
 }
 
-boolean shotCollision(float astroidX, float astroidY, int rockSize) {
+boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean alive) {
   boolean collision = false;
   rockSize/=2;
   for (int i = 0; i < shots.size(); i++) {
     if ((shots.get(i).x >= (astroidX - rockSize)) && (shots.get(i).x <= (astroidX + rockSize)) && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))) {
-      collision = true;
-      shots.remove(i);
-      sDirections.remove(i);
-      score++;
-      explosionsList = append(explosionsList, 0);
-      explosionsList = append(explosionsList, int(astroidX));
-      explosionsList = append(explosionsList, int(astroidY));
-      //if ( boomSound.isPlaying()== false )
-      boomSound.play();
+      if (!alive){
+        collision = true;
+        shots.remove(i);
+        sDirections.remove(i);
+        score++;
+        explosionsList = append(explosionsList, 0);
+        explosionsList = append(explosionsList, int(astroidX));
+        explosionsList = append(explosionsList, int(astroidY));
+        //if ( boomSound.isPlaying()== false )
+        boomSound.play();
+      }
     }
   }
   return collision;
