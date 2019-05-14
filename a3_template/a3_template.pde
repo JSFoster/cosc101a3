@@ -19,12 +19,13 @@ SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound,
 
 //SoundFile music;
 
-PImage frame, hud, ship, ufo, thrust1, thrust2;
+PImage frame, hud, ship, ufo, thrust1, thrust2, heart, blueBall, purpleBall, bubble;
 PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
 int[] explosionsList = {};
 int nebulaRandomizer, backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
-int astroNums=5;
+int astroNums=1;
+int increaseAstros=1;
 int bigRockSize = 50;
 int smallRockSize = 25;
 PVector[] astroids = new PVector[astroNums];
@@ -45,7 +46,11 @@ float shipFric = 0.986;
 int speedLimit = 7;
 
 float astroSpeed = 1.0;
+float astroAccel = 0.5;
+float maxAstroSpeed = astroSpeed*5+astroAccel;
 float sAstroSpeed = 3.0;
+float sAstroAccel = 1.0;
+float maxsAstroSpeed = sAstroSpeed*3+sAstroAccel;
 boolean[] hit = new boolean [astroNums];
 boolean[] destroyedOne = new boolean [astroNums];
 boolean[] destroyedTwo = new boolean [astroNums];
@@ -62,6 +67,7 @@ PImage bullet;
 int score=0;
 int lives = 3;
 int level = 1;
+int levelMax = 20;
 boolean playerAlive = true;
 //boolean alive=true;
 
@@ -74,7 +80,7 @@ boolean exitButton = false;
 void setup() {
   //fullScreen();
   size(1440, 900);
-  //size(800, 600);
+  //size(1000, 600);
 
   bigRockSize = width/12;  // if we are going to use scaling here, this has to be after fullscreen is called
   smallRockSize = width/24;
@@ -85,16 +91,20 @@ void setup() {
   stroke(255);
 
   imageMode(CENTER);
-  frame   = loadImage("frame.png");
+  frame      = loadImage("frame.png");
   frame.resize(width, height);
-  hud     = loadImage("hud.png");
-  ship    = loadImage("ship.png");
-  thrust1 = loadImage("thrust1.png");
-  thrust2 = loadImage("thrust2.png");
-  ufo     = loadImage ("ufo.png");
+  hud        = loadImage("hud.png");
+  ship       = loadImage("ship.png");
+  thrust1    = loadImage("thrust1.png");
+  thrust2    = loadImage("thrust2.png");
+  ufo        = loadImage ("ufo.png");
+  heart      = loadImage ("heart.png");
+  blueBall   = loadImage ("blueball.png");
+  purpleBall = loadImage ("purpleball.png");
+  bubble     = loadImage ("bubble.png");
 
   nebulaRandomizer     =int(random(0, 4));
-  backGroundRandomizer =int(random(0, 4));
+  backGroundRandomizer =level % 4;
   nebulaPosRandomizerX =int(random(0, width));
   nebulaPosRandomizerY =-350;
   explosionImages  = new PImage[17];
@@ -116,22 +126,7 @@ void setup() {
 
   //initialise pvtecotrs
   //random astroid initial positions and directions;
-  for (int i = 0; i < astroNums; i++) {
-    astroids[i] = new PVector(0, random(0, height));// may want to change so not all astroids start from left edge
-    astroDirect[i] = new PVector(random(-astroSpeed, astroSpeed), random(-astroSpeed, astroSpeed));
-    sAstroOne[i] = new PVector(astroids[i].x, astroids[i].y);
-    sAstroTwo[i] = new PVector(astroids[i].x, astroids[i].y);
-    sAstroThree[i] = new PVector(astroids[i].x, astroids[i].y);
-    sAstroDirectOne[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
-    sAstroDirectTwo[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
-    sAstroDirectThree[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
-    hit[i] = false;
-    destroyedOne[i] = false;
-    destroyedTwo[i] = false;
-    destroyedThree[i] = false;
-  }
-  //hit[5] = true; //for demonstration purposes only
-  //destroyedOne[5] = true; //for demonstration purposes only
+  createAstro();
   //initialise shapes if needed
   
   // Create bullet graphic.
@@ -157,6 +152,7 @@ void draw() {
     drawAstroids();
     drawExplosions();
     drawHud();
+    levelUp();
   }
 }
 
@@ -341,18 +337,6 @@ void cleanArray() {
     }
   }
   explosionsList = explosionsListTemp;  
-
-  /*
-  int[] explosionsListTemp = new int[0];
-   for (int i = 0; i <= explosionsList.length-1; i=i+3) {
-   if (explosionsList[i] < 17) {
-     explosionsListTemp = append(explosionsListTemp, explosionsList[i]);
-     explosionsListTemp = append(explosionsListTemp, explosionsList[i+1]);
-     explosionsListTemp = append(explosionsListTemp, explosionsList[i+2]);
-     }
-   }
-   explosionsList = explosionsListTemp; 
-   */
 }
 
 void drawShots() {
@@ -379,7 +363,7 @@ void drawShots() {
 }
 
 /**************************************************************
- * Function: drawAstroids()
+ * Function: drawAstroids
  
  * Parameters: None
  
@@ -395,10 +379,6 @@ void drawShots() {
  ***************************************************************/
 
 void drawAstroids() {
-  //check to see if astroid is not already destroyed
-  //otherwise draw at location
-  //initial direction and location should be randomised
-  //also make sure the astroid has not moved outside of the window
   for (int i = 0; i < astroNums; i ++) {
     if (shotCollision(astroids[i].x, astroids[i].y, bigRockSize, hit[i])) {
       hit[i] = true;
@@ -411,14 +391,22 @@ void drawAstroids() {
       borderWrap(sAstroOne[i]);
       borderWrap(sAstroTwo[i]);
       borderWrap(sAstroThree[i]);
-      borderWrap(astroids[i]);
-      image(rockImages[0], astroids[i].x, astroids[i].y);
+      borderWrap(astroids[i]);   
+      pushMatrix();    
+      translate(astroids[i].x, astroids[i].y);
+      rotate(radians(frameCount)); 
+      image(rockImages[0], 0, 0);
+      popMatrix();
     }
     if (hit[i]) {
       if (!destroyedOne[i]) {
         sAstroOne[i].add(sAstroDirectOne[i]);
-        borderWrap(sAstroOne[i]);
-        image(rockImages[1], sAstroOne[i].x, sAstroOne[i].y);
+        borderWrap(sAstroOne[i]);    
+        pushMatrix();    
+        translate(sAstroOne[i].x, sAstroOne[i].y);
+        rotate(radians(frameCount)/.25); 
+        image(rockImages[1], 0, 0);
+        popMatrix();
         if (shotCollision(sAstroOne[i].x, sAstroOne[i].y, smallRockSize, destroyedOne[i])) {
           destroyedOne[i] = true;
         }
@@ -426,7 +414,11 @@ void drawAstroids() {
       if (!destroyedTwo[i]) {
         sAstroTwo[i].add(sAstroDirectTwo[i]);
         borderWrap(sAstroTwo[i]);
-        image(rockImages[2], sAstroTwo[i].x, sAstroTwo[i].y);
+        pushMatrix();    
+        translate(sAstroTwo[i].x, sAstroTwo[i].y);
+        rotate(radians(frameCount)/2); 
+        image(rockImages[2], 0, 0);
+        popMatrix();
         if (shotCollision(sAstroTwo[i].x, sAstroTwo[i].y, smallRockSize, destroyedTwo[i])) {
           destroyedTwo[i] = true;
         }
@@ -434,7 +426,11 @@ void drawAstroids() {
       if (!destroyedThree[i]) {
         sAstroThree[i].add(sAstroDirectThree[i]);
         borderWrap(sAstroThree[i]);
-        image(rockImages[3], sAstroThree[i].x, sAstroThree[i].y);
+        pushMatrix();    
+        translate(sAstroThree[i].x, sAstroThree[i].y);
+        rotate(radians(frameCount)/.5); 
+        image(rockImages[3], 0, 0);
+        popMatrix();
         if (shotCollision(sAstroThree[i].x, sAstroThree[i].y, smallRockSize, destroyedThree[i])) {
           destroyedThree[i] = true;
         }
@@ -444,7 +440,7 @@ void drawAstroids() {
 }
 
 /**************************************************************
- * Function: borderWrap(stroid)
+ * Function: borderWrap
  
  * Parameters: stroid - a PVector of the location of an astroid
  
@@ -477,7 +473,7 @@ void collisionDetection() {
           (dist(shipLoc.x, shipLoc.y, sAstroTwo[i].x, sAstroTwo[i].y) < smallRockSize/2 + ship.width/2 && !destroyedTwo[i]) ||
           (dist(shipLoc.x, shipLoc.y, sAstroThree[i].x, sAstroThree[i].y) < smallRockSize/2 + ship.width/2 && !destroyedThree[i])) {
         playerAlive = false;
-        hit[i] = true;
+        //hit[i] = true;
       }
     }
   }
@@ -485,6 +481,12 @@ void collisionDetection() {
 
 void lifeLost() {
   lives--;
+  explosionsList = append(explosionsList, 0);
+  explosionsList = append(explosionsList, int(shipLoc.x));
+  explosionsList = append(explosionsList, int(shipLoc.y));
+  bigGunSound.play();
+  biggerBoomSound.play();  // hehehehe
+  deepBoomSound.play();
   shipLoc = new PVector(width/2, height/2);
   shipVel = new PVector(0, 0);
   playerAlive = true;
@@ -584,10 +586,7 @@ void keyPressed() {
     sLEFT=true;
   }
   if (key == 'f') { 
-    backGroundRandomizer =int(random(0, 4));
-    level++;
-    println("Active Explosions");
-    println(explosionsList);
+
     cleanArray();
   }
 }
@@ -623,12 +622,35 @@ void keyReleased() {
   }
 }
 
-boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean alive) {
+/**************************************************************
+ * Function: shotCollision
+ 
+ * Parameters: 
+ - astroidX - float - the X location of the center of the 
+ asteroid to be tested
+ - astroidY - float - the Y location of the center of the 
+ asteroid to be tested
+ - rockSize - interger - the size of the astroid to be tested
+ - dead - boolean - make sure asteroid tested is an asteroid 
+ that is being displayed
+ 
+ * Returns: 
+ - collision - boolean - if there has been a collision returns 
+ true, else returns false.
+ 
+ * Desc: used to test individual asteroids against all shots in 
+ the shots array to see if there has been a collision. if there 
+ has been, the shot is removed from the shots array and an 
+ explosion is displayed with an accompanying explosion sound.
+ ***************************************************************/
+ 
+boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean dead) {
   boolean collision = false;
   rockSize/=2;
   for (int i = 0; i < shots.size(); i++) {
-    if ((shots.get(i).x >= (astroidX - rockSize)) && (shots.get(i).x <= (astroidX + rockSize)) && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))) {
-      if (!alive){
+    if ((shots.get(i).x >= (astroidX - rockSize)) && (shots.get(i).x <= (astroidX + rockSize)) 
+    && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))) {
+      if (!dead){
         collision = true;
         shots.remove(i);
         sDirections.remove(i);
@@ -636,10 +658,130 @@ boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean aliv
         explosionsList = append(explosionsList, 0);
         explosionsList = append(explosionsList, int(astroidX));
         explosionsList = append(explosionsList, int(astroidY));
-        //if ( boomSound.isPlaying()== false )
         boomSound.play();
       }
     }
   }
   return collision;
+}
+
+/**************************************************************
+ * Function: createAstro
+ 
+ * Parameters: None
+ 
+ * Returns: Void
+ 
+ * Desc: used to create arrays for use with asteroids.
+  ***************************************************************/
+ 
+void createAstro(){
+    for (int i = 0; i < astroNums; i++) {
+    astroids[i] = new PVector(0, random(0, height));// may want to change so not all astroids start from left edge
+    astroDirect[i] = new PVector(random(-astroSpeed, astroSpeed), random(-astroSpeed, astroSpeed));
+    sAstroOne[i] = new PVector(astroids[i].x, astroids[i].y);
+    sAstroTwo[i] = new PVector(astroids[i].x, astroids[i].y);
+    sAstroThree[i] = new PVector(astroids[i].x, astroids[i].y);
+    sAstroDirectOne[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
+    sAstroDirectTwo[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
+    sAstroDirectThree[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
+    hit[i] = false;
+    destroyedOne[i] = false;
+    destroyedTwo[i] = false;
+    destroyedThree[i] = false;
+    }
+}
+
+/**************************************************************
+ * Function: isNextLevel
+ 
+ * Parameters: None
+ 
+ * Returns: 
+ - nextLevel - boolean - if a new level is required returns true
+ else returns false
+ 
+ * Desc: iterates throuh asteroid boolean arrays and uses a 
+ counter to see if all asteroids on current level have been
+ destroyed.
+  ***************************************************************/
+  
+boolean isNextLevel(){
+  boolean nextLevel = false;
+  int counter = 0;
+  for (int i = 0; i < astroNums; i++){
+    if (hit[i] && destroyedOne[i] && destroyedTwo[i] && destroyedThree[i]){
+      counter++;
+    }
+    if (counter == astroNums){
+      nextLevel = true;
+    }
+  }
+  return nextLevel;
+}
+/**************************************************************
+ * Function: levelUp
+ 
+ * Parameters: None
+ 
+ * Returns: void
+ 
+ * Desc: when it is time for the next level, increases number of
+ asteroids as well as increasing their potential speed.
+ 
+ /////////TODO finish the game once max level complete/////////////////////////////////////////////
+  ***************************************************************/    
+void levelUp(){
+  if (isNextLevel()){
+    level++;
+    backGroundRandomizer = level % 4;
+    if (level <= levelMax){
+      astroNums += increaseAstros;
+      if (astroSpeed < maxAstroSpeed){
+        astroSpeed += astroAccel;
+      }
+      if (sAstroSpeed < maxsAstroSpeed){
+        sAstroSpeed += sAstroAccel;
+      }
+      resetArrays();
+      createAstro();
+    } 
+  }// }else} game finished
+}
+
+/**************************************************************
+ * Function: resetArrays
+ 
+ * Parameters: None
+ 
+ * Returns: void
+ 
+ * Desc: creates temporary arrays to reset existing arrays so 
+ they can be resized.
+  ***************************************************************/
+void resetArrays(){
+      PVector[] astroTemp = new PVector[astroNums];
+      astroids = astroTemp;
+      PVector[] astroDirectTemp = new PVector[astroNums];
+      astroDirect = astroDirectTemp;
+      PVector[] sAstroOneTemp = new PVector[astroNums];
+      sAstroOne = sAstroOneTemp;
+      PVector[] sAstroTwoTemp = new PVector[astroNums];
+      sAstroTwo = sAstroTwoTemp;
+      PVector[] sAstroThreeTemp = new PVector[astroNums];
+      sAstroThree = sAstroThreeTemp;
+      PVector[] sAstroDirectOneTemp = new PVector[astroNums];
+      sAstroDirectOne = sAstroDirectOneTemp;
+      PVector[] sAstroDirectTwoTemp = new PVector[astroNums];
+      sAstroDirectTwo = sAstroDirectTwoTemp;
+      PVector[] sAstroDirectThreeTemp = new PVector[astroNums];
+      sAstroDirectThree = sAstroDirectThreeTemp;
+      boolean[] hitTemp = new boolean [astroNums];
+      hit = hitTemp;
+      boolean[] destroyedOneTemp = new boolean [astroNums];
+      destroyedOne = destroyedOneTemp;
+      boolean[] destroyedTwoTemp = new boolean [astroNums];
+      destroyedTwo = destroyedTwoTemp;
+      boolean[] destroyedThreeTemp = new boolean [astroNums];
+      destroyedThree = destroyedThreeTemp;
 }

@@ -19,7 +19,7 @@ SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound,
 
 //SoundFile music;
 
-PImage frame, hud, ship, ufo, thrust1, thrust2;
+PImage frame, hud, ship, ufo, thrust1, thrust2, heart, blueBall, purpleBall, bubble;
 PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
 int[] explosionsList = {};
 int nebulaRandomizer, backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
@@ -79,8 +79,8 @@ boolean exitButton = false;
 
 void setup() {
   //fullScreen();
-  //size(1440, 900);
-  size(1000, 600);
+  size(1440, 900);
+  //size(1000, 600);
 
   bigRockSize = width/12;  // if we are going to use scaling here, this has to be after fullscreen is called
   smallRockSize = width/24;
@@ -91,16 +91,20 @@ void setup() {
   stroke(255);
 
   imageMode(CENTER);
-  frame   = loadImage("frame.png");
+  frame      = loadImage("frame.png");
   frame.resize(width, height);
-  hud     = loadImage("hud.png");
-  ship    = loadImage("ship.png");
-  thrust1 = loadImage("thrust1.png");
-  thrust2 = loadImage("thrust2.png");
-  ufo     = loadImage ("ufo.png");
+  hud        = loadImage("hud.png");
+  ship       = loadImage("ship.png");
+  thrust1    = loadImage("thrust1.png");
+  thrust2    = loadImage("thrust2.png");
+  ufo        = loadImage ("ufo.png");
+  heart      = loadImage ("heart.png");
+  blueBall   = loadImage ("blueball.png");
+  purpleBall = loadImage ("purpleball.png");
+  bubble     = loadImage ("bubble.png");
 
   nebulaRandomizer     =int(random(0, 4));
-  backGroundRandomizer =int(random(0, 4));
+  backGroundRandomizer =level % 4;
   nebulaPosRandomizerX =int(random(0, width));
   nebulaPosRandomizerY =-350;
   explosionImages  = new PImage[17];
@@ -333,18 +337,6 @@ void cleanArray() {
     }
   }
   explosionsList = explosionsListTemp;  
-
-  /*
-  int[] explosionsListTemp = new int[0];
-   for (int i = 0; i <= explosionsList.length-1; i=i+3) {
-   if (explosionsList[i] < 17) {
-     explosionsListTemp = append(explosionsListTemp, explosionsList[i]);
-     explosionsListTemp = append(explosionsListTemp, explosionsList[i+1]);
-     explosionsListTemp = append(explosionsListTemp, explosionsList[i+2]);
-     }
-   }
-   explosionsList = explosionsListTemp; 
-   */
 }
 
 void drawShots() {
@@ -399,14 +391,22 @@ void drawAstroids() {
       borderWrap(sAstroOne[i]);
       borderWrap(sAstroTwo[i]);
       borderWrap(sAstroThree[i]);
-      borderWrap(astroids[i]);
-      image(rockImages[0], astroids[i].x, astroids[i].y);
+      borderWrap(astroids[i]);   
+      pushMatrix();    
+      translate(astroids[i].x, astroids[i].y);
+      rotate(radians(frameCount)); 
+      image(rockImages[0], 0, 0);
+      popMatrix();
     }
     if (hit[i]) {
       if (!destroyedOne[i]) {
         sAstroOne[i].add(sAstroDirectOne[i]);
-        borderWrap(sAstroOne[i]);
-        image(rockImages[1], sAstroOne[i].x, sAstroOne[i].y);
+        borderWrap(sAstroOne[i]);    
+        pushMatrix();    
+        translate(sAstroOne[i].x, sAstroOne[i].y);
+        rotate(radians(frameCount)/.25); 
+        image(rockImages[1], 0, 0);
+        popMatrix();
         if (shotCollision(sAstroOne[i].x, sAstroOne[i].y, smallRockSize, destroyedOne[i])) {
           destroyedOne[i] = true;
         }
@@ -414,7 +414,11 @@ void drawAstroids() {
       if (!destroyedTwo[i]) {
         sAstroTwo[i].add(sAstroDirectTwo[i]);
         borderWrap(sAstroTwo[i]);
-        image(rockImages[2], sAstroTwo[i].x, sAstroTwo[i].y);
+        pushMatrix();    
+        translate(sAstroTwo[i].x, sAstroTwo[i].y);
+        rotate(radians(frameCount)/2); 
+        image(rockImages[2], 0, 0);
+        popMatrix();
         if (shotCollision(sAstroTwo[i].x, sAstroTwo[i].y, smallRockSize, destroyedTwo[i])) {
           destroyedTwo[i] = true;
         }
@@ -422,7 +426,11 @@ void drawAstroids() {
       if (!destroyedThree[i]) {
         sAstroThree[i].add(sAstroDirectThree[i]);
         borderWrap(sAstroThree[i]);
-        image(rockImages[3], sAstroThree[i].x, sAstroThree[i].y);
+        pushMatrix();    
+        translate(sAstroThree[i].x, sAstroThree[i].y);
+        rotate(radians(frameCount)/.5); 
+        image(rockImages[3], 0, 0);
+        popMatrix();
         if (shotCollision(sAstroThree[i].x, sAstroThree[i].y, smallRockSize, destroyedThree[i])) {
           destroyedThree[i] = true;
         }
@@ -473,6 +481,12 @@ void collisionDetection() {
 
 void lifeLost() {
   lives--;
+  explosionsList = append(explosionsList, 0);
+  explosionsList = append(explosionsList, int(shipLoc.x));
+  explosionsList = append(explosionsList, int(shipLoc.y));
+  bigGunSound.play();
+  biggerBoomSound.play();  // hehehehe
+  deepBoomSound.play();
   shipLoc = new PVector(width/2, height/2);
   shipVel = new PVector(0, 0);
   playerAlive = true;
@@ -572,10 +586,7 @@ void keyPressed() {
     sLEFT=true;
   }
   if (key == 'f') { 
-    backGroundRandomizer =int(random(0, 4));
-    level++;
-    println("Active Explosions");
-    println(explosionsList);
+
     cleanArray();
   }
 }
@@ -647,9 +658,7 @@ boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean dead
         explosionsList = append(explosionsList, 0);
         explosionsList = append(explosionsList, int(astroidX));
         explosionsList = append(explosionsList, int(astroidY));
-        if (!boomSound.isPlaying()){
-          boomSound.play();
-        }
+        boomSound.play();
       }
     }
   }
@@ -725,6 +734,7 @@ boolean isNextLevel(){
 void levelUp(){
   if (isNextLevel()){
     level++;
+    backGroundRandomizer = level % 4;
     if (level <= levelMax){
       astroNums += increaseAstros;
       if (astroSpeed < maxAstroSpeed){
