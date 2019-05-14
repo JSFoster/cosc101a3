@@ -24,7 +24,8 @@ PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
 int[] explosionsList = {};
 int nebulaRandomizer, backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
-int astroNums=4;
+int astroNums=1;
+int increaseAstros=1;
 int bigRockSize = 50;
 int smallRockSize = 25;
 PVector[] astroids = new PVector[astroNums];
@@ -45,7 +46,11 @@ float shipFric = 0.986;
 int speedLimit = 7;
 
 float astroSpeed = 1.0;
+float astroAccel = 0.5;
+float maxAstroSpeed = astroSpeed*5+astroAccel;
 float sAstroSpeed = 3.0;
+float sAstroAccel = 1.0;
+float maxsAstroSpeed = sAstroSpeed*3+sAstroAccel;
 boolean[] hit = new boolean [astroNums];
 boolean[] destroyedOne = new boolean [astroNums];
 boolean[] destroyedTwo = new boolean [astroNums];
@@ -62,7 +67,7 @@ PImage bullet;
 int score=0;
 int lives = 3;
 int level = 1;
-int levelMax = 5;
+int levelMax = 20;
 boolean playerAlive = true;
 //boolean alive=true;
 
@@ -75,7 +80,7 @@ boolean exitButton = false;
 void setup() {
   //fullScreen();
   //size(1440, 900);
-  size(800, 600);
+  size(1000, 600);
 
   bigRockSize = width/12;  // if we are going to use scaling here, this has to be after fullscreen is called
   smallRockSize = width/24;
@@ -118,24 +123,6 @@ void setup() {
   //initialise pvtecotrs
   //random astroid initial positions and directions;
   createAstro();
-  /*
-  for (int i = 0; i < astroNums; i++) {
-    astroids[i] = new PVector(0, random(0, height));// may want to change so not all astroids start from left edge
-    astroDirect[i] = new PVector(random(-astroSpeed, astroSpeed), random(-astroSpeed, astroSpeed));
-    sAstroOne[i] = new PVector(astroids[i].x, astroids[i].y);
-    sAstroTwo[i] = new PVector(astroids[i].x, astroids[i].y);
-    sAstroThree[i] = new PVector(astroids[i].x, astroids[i].y);
-    sAstroDirectOne[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
-    sAstroDirectTwo[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
-    sAstroDirectThree[i] = new PVector(random(-sAstroSpeed, sAstroSpeed), random(-sAstroSpeed, sAstroSpeed));
-    hit[i] = false;
-    destroyedOne[i] = false;
-    destroyedTwo[i] = false;
-    destroyedThree[i] = false;
-  }
-  */
-  //hit[5] = true; //for demonstration purposes only
-  //destroyedOne[5] = true; //for demonstration purposes only
   //initialise shapes if needed
   
   // Create bullet graphic.
@@ -384,7 +371,7 @@ void drawShots() {
 }
 
 /**************************************************************
- * Function: drawAstroids()
+ * Function: drawAstroids
  
  * Parameters: None
  
@@ -400,10 +387,6 @@ void drawShots() {
  ***************************************************************/
 
 void drawAstroids() {
-  //check to see if astroid is not already destroyed
-  //otherwise draw at location
-  //initial direction and location should be randomised
-  //also make sure the astroid has not moved outside of the window
   for (int i = 0; i < astroNums; i ++) {
     if (shotCollision(astroids[i].x, astroids[i].y, bigRockSize, hit[i])) {
       hit[i] = true;
@@ -449,7 +432,7 @@ void drawAstroids() {
 }
 
 /**************************************************************
- * Function: borderWrap(stroid)
+ * Function: borderWrap
  
  * Parameters: stroid - a PVector of the location of an astroid
  
@@ -628,12 +611,35 @@ void keyReleased() {
   }
 }
 
-boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean alive) {
+/**************************************************************
+ * Function: shotCollision
+ 
+ * Parameters: 
+ - astroidX - float - the X location of the center of the 
+ asteroid to be tested
+ - astroidY - float - the Y location of the center of the 
+ asteroid to be tested
+ - rockSize - interger - the size of the astroid to be tested
+ - dead - boolean - make sure asteroid tested is an asteroid 
+ that is being displayed
+ 
+ * Returns: 
+ - collision - boolean - if there has been a collision returns 
+ true, else returns false.
+ 
+ * Desc: used to test individual asteroids against all shots in 
+ the shots array to see if there has been a collision. if there 
+ has been, the shot is removed from the shots array and an 
+ explosion is displayed with an accompanying explosion sound.
+ ***************************************************************/
+ 
+boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean dead) {
   boolean collision = false;
   rockSize/=2;
   for (int i = 0; i < shots.size(); i++) {
-    if ((shots.get(i).x >= (astroidX - rockSize)) && (shots.get(i).x <= (astroidX + rockSize)) && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))) {
-      if (!alive){
+    if ((shots.get(i).x >= (astroidX - rockSize)) && (shots.get(i).x <= (astroidX + rockSize)) 
+    && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))) {
+      if (!dead){
         collision = true;
         shots.remove(i);
         sDirections.remove(i);
@@ -641,14 +647,25 @@ boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean aliv
         explosionsList = append(explosionsList, 0);
         explosionsList = append(explosionsList, int(astroidX));
         explosionsList = append(explosionsList, int(astroidY));
-        //if ( boomSound.isPlaying()== false )
-        boomSound.play();
+        if (!boomSound.isPlaying()){
+          boomSound.play();
+        }
       }
     }
   }
   return collision;
 }
 
+/**************************************************************
+ * Function: createAstro
+ 
+ * Parameters: None
+ 
+ * Returns: Void
+ 
+ * Desc: used to create arrays for use with asteroids.
+  ***************************************************************/
+ 
 void createAstro(){
     for (int i = 0; i < astroNums; i++) {
     astroids[i] = new PVector(0, random(0, height));// may want to change so not all astroids start from left edge
@@ -666,6 +683,20 @@ void createAstro(){
     }
 }
 
+/**************************************************************
+ * Function: isNextLevel
+ 
+ * Parameters: None
+ 
+ * Returns: 
+ - nextLevel - boolean - if a new level is required returns true
+ else returns false
+ 
+ * Desc: iterates throuh asteroid boolean arrays and uses a 
+ counter to see if all asteroids on current level have been
+ destroyed.
+  ***************************************************************/
+  
 boolean isNextLevel(){
   boolean nextLevel = false;
   int counter = 0;
@@ -679,14 +710,46 @@ boolean isNextLevel(){
   }
   return nextLevel;
 }
-    
+/**************************************************************
+ * Function: levelUp
+ 
+ * Parameters: None
+ 
+ * Returns: void
+ 
+ * Desc: when it is time for the next level, increases number of
+ asteroids as well as increasing their potential speed.
+ 
+ /////////TODO finish the game once max level complete/////////////////////////////////////////////
+  ***************************************************************/    
 void levelUp(){
   if (isNextLevel()){
     level++;
     if (level <= levelMax){
-      astroNums += astroNums;
-      astroSpeed += 0.5;
-      sAstroSpeed += 1;
+      astroNums += increaseAstros;
+      if (astroSpeed < maxAstroSpeed){
+        astroSpeed += astroAccel;
+      }
+      if (sAstroSpeed < maxsAstroSpeed){
+        sAstroSpeed += sAstroAccel;
+      }
+      resetArrays();
+      createAstro();
+    } 
+  }// }else} game finished
+}
+
+/**************************************************************
+ * Function: resetArrays
+ 
+ * Parameters: None
+ 
+ * Returns: void
+ 
+ * Desc: creates temporary arrays to reset existing arrays so 
+ they can be resized.
+  ***************************************************************/
+void resetArrays(){
       PVector[] astroTemp = new PVector[astroNums];
       astroids = astroTemp;
       PVector[] astroDirectTemp = new PVector[astroNums];
@@ -711,7 +774,4 @@ void levelUp(){
       destroyedTwo = destroyedTwoTemp;
       boolean[] destroyedThreeTemp = new boolean [astroNums];
       destroyedThree = destroyedThreeTemp;
-      createAstro();
-    }
-  }
 }
