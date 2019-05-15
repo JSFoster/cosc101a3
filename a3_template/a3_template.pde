@@ -44,6 +44,7 @@ float turnSpeed = 0.08;
 PVector shipLoc, shipVel;
 float shipFric = 0.986;
 int speedLimit = 7;
+int crashCounter = 0;
 
 float astroSpeed = 1.0;
 float astroAccel = 0.5;
@@ -183,7 +184,6 @@ void moveShip() {
   if (shipLoc.x > width) { 
     shipLoc.x = 0;
   }
-
   if (sUP) { 
     shipVel.add(PVector.fromAngle(shipAngle));    //speed up
     if ( thrustSound.isPlaying()== false )thrustSound.play();
@@ -191,24 +191,25 @@ void moveShip() {
   if (!sUP && thrustSound.isPlaying()== true ) {
     thrustSound.stop();
   }
-
   if (sRIGHT) { 
     shipAngle = shipAngle+turnSpeed;
   } 
   if (sLEFT) {  
     shipAngle = shipAngle-turnSpeed;
   }
-
-  shipVel.mult(shipFric);  // slow down
+  shipVel.mult(shipFric);         // slow down
   shipVel.limit(speedLimit);      // limit speed
   shipLoc.add(shipVel);           // change ship location
 }
 
 void drawShip() {
-  if (playerAlive) {
+  if (crashCounter>0){
+    crashCounter -- ;
+  }
+  pushMatrix();    
+  translate(shipLoc.x, shipLoc.y);
+  if (crashCounter < 90) {
     moveShip();
-    pushMatrix();    
-    translate(shipLoc.x, shipLoc.y);
     rotate(shipAngle+PI/2);
     if (sUP) {
       if (frameCount % 2 == 0 ) {
@@ -218,11 +219,47 @@ void drawShip() {
       }
     }
     image(ship, 0, 0); 
-    popMatrix();
-  } else {
-    lifeLost();
+    if ( crashCounter != 0 && (frameCount % 6 == 0 || frameCount % 5 == 0 || frameCount % 4 == 0) ) {
+      image(bubble, 0, 0);
+    }
   }
+  else if(crashCounter == 90){
+    shipLoc = new PVector(width/2, height/2);
+    shipVel = new PVector(0, 0);
+    shipAngle=radians(270);
+  }
+  else if(crashCounter < 160){
+    //silence();  // fix the sound bug here
+  }
+  else if(crashCounter == 160){
+    explosionsList = append(explosionsList, 0);
+    explosionsList = append(explosionsList, int(shipLoc.x));
+    explosionsList = append(explosionsList, int(shipLoc.y));
+    if (lives == 0 ) {
+      bigGunSound.play();//biggerBoomSound.play();  // hehehehe
+    }
+    deepBoomSound.play();
+  }
+  else if(crashCounter < 209){
+    moveShip();
+    rotate(frameCount/2);
+    image(thrust2, 0, 35);
+    image(ship, 0, 0); 
+  }
+  else if(crashCounter == 209){
+    lives--;
+    explosionsList = append(explosionsList, 0);
+    explosionsList = append(explosionsList, int(shipLoc.x));
+    explosionsList = append(explosionsList, int(shipLoc.y));
+    biggerBoomSound.play();  // hehehehe
+  }
+  popMatrix();
 }
+
+
+//void lifeLost() {
+ // playerAlive = true; 
+//}
 
 void drawBackGround() {
   background(0);
@@ -268,7 +305,6 @@ void drawHud() {
   if ( 1 == 1 ) {
     image(rockImages[3], 70, 25, 40, 40); // powerup placeholder
   }
-
   popMatrix();
 }
 
@@ -466,32 +502,22 @@ void borderWrap(PVector stroid) {
 
 
 void collisionDetection() {
-  if (playerAlive) {
+  if (crashCounter  <= 90 ) { 
     for (int i = 0; i < astroNums; i ++) {
       if ((dist(shipLoc.x, shipLoc.y, astroids[i].x, astroids[i].y) < bigRockSize/2 + ship.width/2 && !hit[i]) ||
           (dist(shipLoc.x, shipLoc.y, sAstroOne[i].x, sAstroOne[i].y) < smallRockSize/2 + ship.width/2 && !destroyedOne[i]) ||
           (dist(shipLoc.x, shipLoc.y, sAstroTwo[i].x, sAstroTwo[i].y) < smallRockSize/2 + ship.width/2 && !destroyedTwo[i]) ||
           (dist(shipLoc.x, shipLoc.y, sAstroThree[i].x, sAstroThree[i].y) < smallRockSize/2 + ship.width/2 && !destroyedThree[i])) {
-        playerAlive = false;
-        //hit[i] = true;
+        if (crashCounter  == 0 ){
+          crashCounter = 210;
+        }
+        hit[i] = true;
       }
     }
   }
 }
 
-void lifeLost() {
-  lives--;
-  explosionsList = append(explosionsList, 0);
-  explosionsList = append(explosionsList, int(shipLoc.x));
-  explosionsList = append(explosionsList, int(shipLoc.y));
-  bigGunSound.play();
-  biggerBoomSound.play();  // hehehehe
-  deepBoomSound.play();
-  shipLoc = new PVector(width/2, height/2);
-  shipVel = new PVector(0, 0);
-  playerAlive = true;
-  shipAngle=radians(270); 
-}
+
 
 void startScreen () {
   drawBackGround();
