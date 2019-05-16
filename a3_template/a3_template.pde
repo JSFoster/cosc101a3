@@ -24,8 +24,8 @@ PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
 int[] explosionsList = {};
 int nebulaRandomizer, backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
-int astroNums=1;
-int increaseAstros=1;
+int astroNums = 1;
+int increaseAstros;
 int bigRockSize = 50;
 int smallRockSize = 25;
 PVector[] astroids = new PVector[astroNums];
@@ -65,23 +65,25 @@ float fireRate = 0.1; // Adjust 0.0 - 1.0
 float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
 PImage bullet;
 
-int score=0;
-int lives = 3;
-int level = 1;
+int score, lives, level;
 int levelMax = 20;
-boolean playerAlive = true;
-//boolean alive=true;
+boolean playerAlive;
+boolean gameOver;
 
 // Start screen bools
 boolean startScreen = true;
 boolean startButton = false;
 boolean highScoreButton = false;
 boolean exitButton = false;
+boolean restartButton = false;
 
 void setup() {
   //fullScreen();
   size(1440, 900);
   //size(1000, 600);
+  
+  // Initialise starter variables, clears arrays and creates calls for initial asteroids.
+  resetGame();
 
   bigRockSize = width/12;  // if we are going to use scaling here, this has to be after fullscreen is called
   smallRockSize = width/24;
@@ -144,7 +146,10 @@ void setup() {
 void draw() {
   if (startScreen) {
     startScreen();
+  } else if (gameOver) {
+    gameOverScreen();
   } else {
+    println(lives);
     drawBackGround();
     collisionDetection();
     drawShots();
@@ -235,8 +240,9 @@ void drawShip() {
     explosionsList = append(explosionsList, 0);
     explosionsList = append(explosionsList, int(shipLoc.x));
     explosionsList = append(explosionsList, int(shipLoc.y));
-    if (lives == 0 ) {
+    if (lives <= 0 ) {
       bigGunSound.play();//biggerBoomSound.play();  // hehehehe
+      gameOver = true;
     }
     deepBoomSound.play();
   }
@@ -247,11 +253,11 @@ void drawShip() {
     image(ship, 0, 0); 
   }
   else if(crashCounter == 209){
-    lives--;
-    explosionsList = append(explosionsList, 0);
-    explosionsList = append(explosionsList, int(shipLoc.x));
-    explosionsList = append(explosionsList, int(shipLoc.y));
-    biggerBoomSound.play();  // hehehehe
+      lives--;
+      explosionsList = append(explosionsList, 0);
+      explosionsList = append(explosionsList, int(shipLoc.x));
+      explosionsList = append(explosionsList, int(shipLoc.y));
+      biggerBoomSound.play();  // hehehehe
   }
   popMatrix();
 }
@@ -504,19 +510,30 @@ void borderWrap(PVector stroid) {
 void collisionDetection() {
   if (crashCounter  <= 90 ) { 
     for (int i = 0; i < astroNums; i ++) {
-      if ((dist(shipLoc.x, shipLoc.y, astroids[i].x, astroids[i].y) < bigRockSize/2 + ship.width/2 && !hit[i]) ||
-          (dist(shipLoc.x, shipLoc.y, sAstroOne[i].x, sAstroOne[i].y) < smallRockSize/2 + ship.width/2 && !destroyedOne[i]) ||
-          (dist(shipLoc.x, shipLoc.y, sAstroTwo[i].x, sAstroTwo[i].y) < smallRockSize/2 + ship.width/2 && !destroyedTwo[i]) ||
-          (dist(shipLoc.x, shipLoc.y, sAstroThree[i].x, sAstroThree[i].y) < smallRockSize/2 + ship.width/2 && !destroyedThree[i])) {
+      if (dist(shipLoc.x, shipLoc.y, astroids[i].x, astroids[i].y) < bigRockSize/2 + ship.width/2 && !hit[i]) {
+        hit[i] = true;
         if (crashCounter  == 0 ){
           crashCounter = 210;
         }
-        hit[i] = true;
-      }
+      } else if (dist(shipLoc.x, shipLoc.y, sAstroOne[i].x, sAstroOne[i].y) < smallRockSize/2 + ship.width/2 && !destroyedOne[i]) {
+        destroyedOne[i] = true;
+        if (crashCounter  == 0 ){
+          crashCounter = 210;
+        }
+      } else if (dist(shipLoc.x, shipLoc.y, sAstroTwo[i].x, sAstroTwo[i].y) < smallRockSize/2 + ship.width/2 && !destroyedTwo[i]) {
+        destroyedTwo[i] = true;
+        if (crashCounter  == 0 ){
+          crashCounter = 210;
+        }
+      } else if (dist(shipLoc.x, shipLoc.y, sAstroThree[i].x, sAstroThree[i].y) < smallRockSize/2 + ship.width/2 && !destroyedThree[i]) {
+        destroyedThree[i] = true;
+        if (crashCounter  == 0 ){
+          crashCounter = 210;
+        }
+      }   
     }
   }
 }
-
 
 
 void startScreen () {
@@ -560,7 +577,7 @@ void startScreen () {
   popMatrix();
   if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+125 && mouseY < height/3+225) {
     startButton = true;
-    if (mousePressed) {
+    if (mousePressed && restartButton == false) {
       startScreen = false;
     }
   } else {
@@ -573,13 +590,41 @@ void startScreen () {
   }
   if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+425 && mouseY < height/3+525) {
     exitButton = true;
-    if (mousePressed) {
+    if (mousePressed && restartButton == false) {
       exit();
     }
   } else {
     exitButton = false;
   }
+  if (!mousePressed) {
+    restartButton = false;
+  }
 }
+
+void gameOverScreen () {
+  drawBackGround();
+  drawExplosions();
+  image(frame, width/2, height/2);
+  pushMatrix();
+  textAlign(CENTER);
+  strokeWeight(3);
+  textSize(125);
+  fill(255, 0, 0);
+  text("GAME OVER", width/2, height/3);
+  textSize(70);
+  text("SCORE: " + score, width/2, height/3 + 200);
+  fill(0);
+  rect(width/2, height/3+475, 420, 100);
+  fill(255, 0, 0);
+  text("AGAIN?", width/2, height/3 + 500);
+  popMatrix();
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+425 && mouseY < height/3+525 && mousePressed) {
+    resetGame();
+    restartButton = true;
+    startScreen = true;
+  }
+}
+
 
 void keyPressed() {
   if (key == CODED) {
@@ -758,8 +803,9 @@ boolean isNextLevel(){
  /////////TODO finish the game once max level complete/////////////////////////////////////////////
   ***************************************************************/    
 void levelUp(){
-  if (isNextLevel()){
+  if (isNextLevel() && lives > 0 && crashCounter <= 90){
     level++;
+    crashCounter = 0;
     backGroundRandomizer = level % 4;
     if (level <= levelMax){
       astroNums += increaseAstros;
@@ -772,7 +818,7 @@ void levelUp(){
       resetArrays();
       createAstro();
     } 
-  }// }else} game finished
+  }
 }
 
 /**************************************************************
@@ -810,4 +856,21 @@ void resetArrays(){
       destroyedTwo = destroyedTwoTemp;
       boolean[] destroyedThreeTemp = new boolean [astroNums];
       destroyedThree = destroyedThreeTemp;
+}
+
+// Reset all starter variables, resets arrays and calls for creation of starter asteroids.
+void resetGame() {
+  astroNums = 1;
+  increaseAstros = 1;
+  crashCounter = 0;
+  score = 0;
+  lives = 3;
+  level = 1;
+  playerAlive = true;
+  gameOver = false;
+  shipLoc = new PVector(width/2, height/2);
+  shipVel = new PVector(0, 0);
+  shipAngle=radians(270);
+  resetArrays();
+  createAstro();
 }
