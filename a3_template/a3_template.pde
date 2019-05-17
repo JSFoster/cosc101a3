@@ -10,24 +10,24 @@
  * ...
  **************************************************************
  sound effects sourced from: https://freesound.org
- All images sourced from: https://www.kisspng.com 
+ explosion image sourced from: COSC101 lecture 14
+ All other images sourced from: https://www.kisspng.com 
  */
 
 import processing.sound.*;
 SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound, 
   biggerBoomSound, deepBoomSound, laser2Sound, bigGunSound;
 
-//SoundFile music;
-
 PImage frame, hud, ship, ufo, thrust1, thrust2, heart, blueBall, purpleBall, bubble;
 PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
 int[] explosionsList = {};
+float[] powerUpsList = {};
 int nebulaRandomizer, backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 
 int astroNums = 1;
 int increaseAstros;
-int bigRockSize = 50;
-int smallRockSize = 25;
+int bigRockSize = 0;
+int smallRockSize = 0;
 PVector[] astroids = new PVector[astroNums];
 PVector[] astroDirect = new PVector[astroNums];
 PVector[] sAstroOne = new PVector[astroNums];
@@ -70,6 +70,9 @@ boolean powerShot = false;
 int pUpCounter;
 int pUpTime = 500;
 int numPowerShots = 1;
+int powerUpFreq = 2; // how often are powerUps spawned (1->10)
+int powerUpBubble = 0; // powerUp 'energys'
+//int powerUp...... = 0;
 
 int score, lives, level;
 int levelMax = 20;
@@ -85,8 +88,8 @@ boolean restartButton = false;
 
 void setup() {
   //fullScreen();
- // size(1440, 900);
-  size(1000, 600);
+  size(1440, 900);
+  //size(1000, 600);
   
   // Initialise starter variables, clears arrays and creates calls for initial asteroids.
   resetGame();
@@ -108,8 +111,11 @@ void setup() {
   thrust2    = loadImage("thrust2.png");
   ufo        = loadImage ("ufo.png");
   heart      = loadImage ("heart.png");
+  heart.resize(30, 30);
   blueBall   = loadImage ("blueball.png");
+  blueBall.resize(30, 30);
   purpleBall = loadImage ("purpleball.png");
+  purpleBall.resize(30, 30);
   bubble     = loadImage ("bubble.png");
 
   nebulaRandomizer     =int(random(0, 4));
@@ -124,17 +130,14 @@ void setup() {
 
   thrustSound     = new SoundFile(this, "thrust.mp3");
   laserSound      = new SoundFile(this, "laser.mp3");
-  shotgunSound    = new SoundFile(this, "ding.mp3");
-  dingSound       = new SoundFile(this, "boom.mp3");
+  shotgunSound    = new SoundFile(this, "shotgun.mp3");
+  dingSound       = new SoundFile(this, "ding.mp3");
   boomSound       = new SoundFile(this, "boom.mp3");
   biggerBoomSound = new SoundFile(this, "biggerBoom.mp3");
   deepBoomSound   = new SoundFile(this, "deepBoom.mp3");
   laser2Sound     = new SoundFile(this, "laser2.mp3");
   bigGunSound     = new SoundFile(this, "bigGun.mp3");
-  //music   =    new SoundFile(this, "music.mp3");
 
-  //initialise pvtecotrs
-  //random astroid initial positions and directions;
   createAstro();
   //initialise shapes if needed
   
@@ -164,14 +167,13 @@ void draw() {
   } else if (gameOver) {
     gameOverScreen();
   } else {
-    println(lives);
     drawBackGround();
     collisionDetection();
     drawShots();
     drawShip();
     // report if game over or won
     drawAstroids();
-    drawExplosions();
+    drawEffects();
     drawHud();
     levelUp();
   }
@@ -256,7 +258,7 @@ void drawShip() {
     explosionsList = append(explosionsList, int(shipLoc.x));
     explosionsList = append(explosionsList, int(shipLoc.y));
     if (lives <= 0 ) {
-      bigGunSound.play();//biggerBoomSound.play();  // hehehehe
+      bigGunSound.play();
       gameOver = true;
     }
     deepBoomSound.play();
@@ -278,10 +280,6 @@ void drawShip() {
 }
 
 
-//void lifeLost() {
- // playerAlive = true; 
-//}
-
 void drawBackGround() {
   background(0);
   tint(95);
@@ -297,11 +295,15 @@ void drawBackGround() {
 }
 
 void drawHud() {
+  if (powerUpBubble>0){
+    fill(75);
+    ellipse(50, height,powerUpBubble*1.3,powerUpBubble*1.3);
+    powerUpBubble --;
+    crashCounter = 10;
+  }
   image(frame, width/2, height/2);
-
   pushMatrix();    
   translate(175, height-150);
-
   textAlign(CENTER);
   image(hud, 0, 0);
   if (lives > 0) {
@@ -359,7 +361,7 @@ void createImageArrays() {
   }
 }
 
-void drawExplosions() {
+void drawEffects() {
   for (int i = 0; i <= explosionsList.length-1; i=i+3) {
     if (explosionsList[i]<17) {
       image(explosionImages[explosionsList[i]], explosionsList[i+1], explosionsList[i+2]);
@@ -368,6 +370,43 @@ void drawExplosions() {
       }
     }
   }
+  
+  for (int i = 0; i <= powerUpsList.length-1; i=i+5) {
+    if (powerUpsList[i]==1) {
+      image(heart, powerUpsList[i+1], powerUpsList[i+2]);
+      powerUpsList[i+1] = powerUpsList[i+1]+powerUpsList[i+3];
+      powerUpsList[i+2] = powerUpsList[i+2]+powerUpsList[i+4];
+    }
+    else if (powerUpsList[i]==2) {
+      image(bubble, powerUpsList[i+1], powerUpsList[i+2],30,30);
+      powerUpsList[i+1] = powerUpsList[i+1]+powerUpsList[i+3];
+      powerUpsList[i+2] = powerUpsList[i+2]+powerUpsList[i+4];
+    }
+    else if (powerUpsList[i]==3) {
+      image(purpleBall, powerUpsList[i+1], powerUpsList[i+2]);
+      powerUpsList[i+1] = powerUpsList[i+1]+powerUpsList[i+3];
+      powerUpsList[i+2] = powerUpsList[i+2]+powerUpsList[i+4];
+    } 
+    else if (powerUpsList[i]==4) {
+      image(blueBall, powerUpsList[i+1], powerUpsList[i+2]);
+      powerUpsList[i+1] = powerUpsList[i+1]+powerUpsList[i+3];
+      powerUpsList[i+2] = powerUpsList[i+2]+powerUpsList[i+4];
+    }
+  }
+  
+}
+
+void powerUp(float x,float y){
+  if (lives < 3){
+    powerUpsList = append(powerUpsList, int(random(5)));  
+  } else {
+    powerUpsList = append(powerUpsList, int(random(2,5)));
+  }
+  powerUpsList = append(powerUpsList, x);
+  powerUpsList = append(powerUpsList, y);
+  powerUpsList = append(powerUpsList, random(-3,4));
+  powerUpsList = append(powerUpsList, random(-2,3));
+  //dingSound.play();
 }
 
 /**************************************************************
@@ -393,7 +432,17 @@ void cleanArray() {
       explosionsListTemp = append(explosionsListTemp, explosionsList[i+2]);
     }
   }
-  explosionsList = explosionsListTemp;  
+  explosionsList = explosionsListTemp; 
+  
+  thrustSound.stop();
+  laserSound.stop();
+  shotgunSound.stop();
+  dingSound.stop();
+  boomSound.stop(); 
+  biggerBoomSound.stop();
+  deepBoomSound.stop();
+  laser2Sound.stop();
+  bigGunSound.stop();
 }
 
 void drawShots() {
@@ -627,7 +676,7 @@ void startScreen () {
 
 void gameOverScreen () {
   drawBackGround();
-  drawExplosions();
+  drawEffects();
   image(frame, width/2, height/2);
   pushMatrix();
   textAlign(CENTER);
@@ -665,9 +714,14 @@ void keyPressed() {
       sLEFT=true;
     }
   }
-  if (key == ' ') { 
+  if (key == ' ' ) { 
+    println(crashCounter);
+    if (crashCounter > 90 && crashCounter < 159 ) {
+      sSPACE=false;
+    } else {
     sSPACE=true;
-  } //fire a shot
+    }
+  }                //fire a shot
   if (key == 'w') { 
     sUP=true;
   }
@@ -681,9 +735,10 @@ void keyPressed() {
     sLEFT=true;
   }
   if (key == 'f') { 
-
     cleanArray();
+    powerUpBubble = 400;
   }
+    
   if (key == 'p'){
     if(numPowerShots > 0 && !powerShot){
       powerShot = true;
@@ -763,6 +818,9 @@ boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean dead
         explosionsList = append(explosionsList, int(astroidX));
         explosionsList = append(explosionsList, int(astroidY));
         boomSound.play();
+        if(frameCount % 10 < powerUpFreq ){
+          powerUp(astroidX,astroidY);
+        }
       }
     }
   }
