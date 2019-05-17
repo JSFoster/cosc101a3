@@ -61,9 +61,15 @@ ArrayList<PVector> shots= new ArrayList<PVector>();
 ArrayList<PVector> sDirections= new ArrayList<PVector>();
 PVector shotVel;
 float shotSpeed = 25;
+float pUpShotSpeed = shotSpeed * 2;
 float fireRate = 0.1; // Adjust 0.0 - 1.0
 float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
 PImage bullet;
+PImage powerBullet;
+boolean powerShot = false;
+int pUpCounter;
+int pUpTime = 500;
+int numPowerShots = 1;
 
 int score, lives, level;
 int levelMax = 20;
@@ -79,8 +85,8 @@ boolean restartButton = false;
 
 void setup() {
   //fullScreen();
-  size(1440, 900);
-  //size(1000, 600);
+ // size(1440, 900);
+  size(1000, 600);
   
   // Initialise starter variables, clears arrays and creates calls for initial asteroids.
   resetGame();
@@ -141,6 +147,15 @@ void setup() {
   pg.filter(BLUR,2);
   pg.endDraw();
   bullet = pg.get();
+  //create power up bullet
+  PGraphics pUp = createGraphics(30, 30);
+  pUp.beginDraw();
+  pUp.strokeWeight(4);
+  pUp.stroke(255,0,0);
+  pUp.ellipse(10, 10, 10, 10);
+  pUp.filter(BLUR,2);
+  pUp.endDraw();
+  powerBullet = pUp.get();
 }
 
 void draw() {
@@ -305,8 +320,8 @@ void drawHud() {
   text("Level", -7, 58);
   text(level, -7, 88);
 
-  if ( 1 == 1 ) {
-    image(rockImages[2], -5, -18, 40, 40); // powerup placeholder
+  if (numPowerShots > 0) {
+    image(powerBullet, 0, -12, 40, 40); // powerup placeholder
   }
   if ( 1 == 1 ) {
     image(rockImages[3], 70, 25, 40, 40); // powerup placeholder
@@ -397,10 +412,19 @@ void drawShots() {
     timeToFire = 1;
   }
   for (int i = 0; i < shots.size(); i++) {
-    image(bullet, shots.get(i).x, shots.get(i).y);
-    shotVel = sDirections.get(i).normalize();
-    shotVel.mult(shotSpeed);
-    shots.get(i).add(shotVel);
+    powerUpTimer();
+    if(powerShot){
+      image(powerBullet, shots.get(i).x+5, shots.get(i).y+7);
+      shotVel = sDirections.get(i).normalize();
+      shotVel.mult(pUpShotSpeed);
+      shots.get(i).add(shotVel);
+    }
+    else{
+      image(bullet, shots.get(i).x, shots.get(i).y);
+      shotVel = sDirections.get(i).normalize();
+      shotVel.mult(shotSpeed);
+      shots.get(i).add(shotVel);
+    }
   }
 }
 
@@ -660,6 +684,13 @@ void keyPressed() {
 
     cleanArray();
   }
+  if (key == 'p'){
+    if(numPowerShots > 0 && !powerShot){
+      powerShot = true;
+      pUpCounter = frameCount + pUpTime;
+      numPowerShots--;
+    }
+  }
 }
 void keyReleased() {
   if (key == CODED) {
@@ -723,8 +754,10 @@ boolean shotCollision(float astroidX, float astroidY, int rockSize, boolean dead
     && (shots.get(i).y >= (astroidY - rockSize)) && (shots.get(i).y <= (astroidY + rockSize))) {
       if (!dead){
         collision = true;
-        shots.remove(i);
-        sDirections.remove(i);
+        if(!powerShot){
+          shots.remove(i);
+          sDirections.remove(i);
+        }
         score++;
         explosionsList = append(explosionsList, 0);
         explosionsList = append(explosionsList, int(astroidX));
@@ -874,3 +907,10 @@ void resetGame() {
   resetArrays();
   createAstro();
 }
+
+void powerUpTimer(){
+  if (frameCount == pUpCounter){
+    powerShot = false;
+  }
+}
+  
