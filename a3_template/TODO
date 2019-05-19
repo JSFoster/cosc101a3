@@ -1,9 +1,7 @@
 To do/Bugs list:
 
-BUG: Sound bug looks un-fixable, find a work-around
 BUG: Start screen doesn't scale. Only suitable from 1080 or higher.
 
-TODO: powerup collision
 TODO: Gun upgrade functionality
 TODO: Level transtion, Gameover?
 TODO: Highscores?

@@ -17,6 +17,7 @@
 import processing.sound.*;
 SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound, 
   biggerBoomSound, deepBoomSound, laser2Sound, bigGunSound;
+SinOsc sine;
 
 PImage frame, hud, ship, ufo, thrust1, thrust2, heart, blueBall, purpleBall, bubble;
 PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
@@ -72,8 +73,8 @@ int pUpTime = 500;
 int numPowerShots = 1;
 int powerUpFreq = 9; // how often are powerUps spawned (1->10)
 int powerUpBubble = 0; // powerUp energys
-boolean canSwat = false;
-int swatter = -70;
+int canSwat = 0;
+int swatter = -61;
 int powerUpCounter = 0;
 
 int score, lives, level;
@@ -139,6 +140,7 @@ void setup() {
   deepBoomSound   = new SoundFile(this, "deepBoom.mp3");
   laser2Sound     = new SoundFile(this, "laser2.mp3");
   bigGunSound     = new SoundFile(this, "bigGun.mp3");
+  sine = new SinOsc(this);
 
   createAstro();
   //initialise shapes if needed
@@ -164,7 +166,6 @@ void setup() {
 }
 
 void draw() {
-        println(powerUpsList.length);
   if (startScreen) {
     startScreen();
   } else if (gameOver) {
@@ -252,7 +253,8 @@ void drawShip() {
     shipVel = new PVector(0, 0);
     shipAngle=radians(270);
   } else if (crashCounter < 160) {
-    //silence();  // fix the sound bug here
+    // No ship
+    sSPACE = false;
   } else if (crashCounter == 160) {
     explosionsList = append(explosionsList, 0);
     explosionsList = append(explosionsList, int(shipLoc.x));
@@ -277,7 +279,6 @@ void drawShip() {
   popMatrix();
 }
 
-
 void drawBackGround() {
   background(0);
   tint(95);
@@ -295,6 +296,8 @@ void drawBackGround() {
 void drawHud() {
   if (powerUpBubble>0) {
     fill(75);
+    strokeWeight(10);
+    stroke(155);
     ellipse(50, height, powerUpBubble*1.3, powerUpBubble*1.3);
     powerUpBubble --;
     crashCounter = 10;
@@ -323,10 +326,17 @@ void drawHud() {
   if (numPowerShots > 0) {
     image(powerBullet, 0, -12, 40, 40); // powerup placeholder
   }
-  if (canSwat) {
-    image(blueBall, 70, 25, 40, 40);
-    if (frameCount % 60 < 35 ) {
-      text("Press F to Swat!", 130, 95);
+  if (canSwat >= 1) {
+    image(blueBall, 70, 5, 30, 30);
+    if (canSwat >= 2) {
+      image(blueBall, 52, 35, 30, 30);
+    }
+    if (canSwat >= 3) {
+      image(blueBall, 88, 35, 30, 30);
+    }
+    textSize(22);
+    if (frameCount % 60 < 45 ) {
+      text("Press S to Engage The BigSwat 9002!", 250, 95);
     }
   }
   popMatrix();
@@ -363,7 +373,7 @@ void createImageArrays() {
 }
 
 void drawEffects() {
-            //draw explosions
+  //draw explosions
   for (int i = 0; i <= explosionsList.length-1; i=i+3) {
     if (explosionsList[i]<17) {
       image(explosionImages[explosionsList[i]], explosionsList[i+1], explosionsList[i+2]);
@@ -372,12 +382,13 @@ void drawEffects() {
       }
     }
   }
-          //draw floating powerups
+  
+  //draw floating powerups
   for (int i = 0; i <= powerUpsList.length-1; i=i+5) {
     pushMatrix();    
     translate(powerUpsList[i+1], powerUpsList[i+2]);
-    rotate(radians(frameCount));  
-    if( powerUpCounter < 100 ) {
+    rotate(radians(frameCount*3));  
+    if ( powerUpCounter < 100 ) {
       tint(powerUpCounter);
     }
     if (powerUpsList[i]==1) {
@@ -385,18 +396,16 @@ void drawEffects() {
     } else if (powerUpsList[i]==2) {
       image(bubble, 0, 0);
     } else if (powerUpsList[i]==3) {
-      image(purpleBall, 0,0);
+      image(purpleBall, 0, 0);
     } else if (powerUpsList[i]==4) { 
-      image(blueBall, 0,0);
+      image(blueBall, 0, 0);
     }
     noTint();
     popMatrix(); 
-    
     powerUpsList[i+1] = powerUpsList[i+1]+powerUpsList[i+3];
     powerUpsList[i+2] = powerUpsList[i+2]+powerUpsList[i+4];
-    
-    if (powerUpsList[1] < 0) {       //border wraps
-      powerUpsList[1] = width;
+    if (powerUpsList[1] < 0) {
+      powerUpsList[1] = width;        //border wraps
     }           
     if (powerUpsList[1] > width) { 
       powerUpsList[1] = 0;
@@ -407,35 +416,72 @@ void drawEffects() {
     if (powerUpsList[2] > height) { 
       powerUpsList[2] = 0;
     }
-    
-    if( powerUpCounter == 0 ) {
+
+    if ( powerUpCounter == 0 ) {
       float[] powerUpsListTemp = new float[0];
       powerUpsList = powerUpsListTemp;
     }
     powerUpCounter --;
+    
+        // player collecting power-ups
+    if (powerUpsList.length > 2){
+      if (dist(shipLoc.x, shipLoc.y, powerUpsList[i+1], powerUpsList[i+2]) < smallRockSize/2 + ship.width/2){ 
+        if (powerUpsList[i] == 1) { 
+          lives++;
+        } else if (powerUpsList[i] == 2) { 
+          powerUpBubble = 400;
+        } else if (powerUpsList[i] == 3) { 
+          //do a thing;
+        } else if (powerUpsList[i] == 4) { 
+          canSwat = 3;
+        }
+        float[] powerUpsListTemp = new float[0];
+        powerUpsList = powerUpsListTemp;
+        dingSound.play();
+      }
+    }
+   
   }
-  
-              //draw swatter
-  if (swatter == 60){
+
+  //draw swatter
+  if (swatter == -60) {
     laser2Sound.play();
-  } else if ( swatter > 0 && swatter < 60){
+  } else if ( swatter >= -59 && swatter < 0) {
     noFill();
-    strokeWeight(10-(swatter/10));
+    strokeWeight(10+(swatter/10));
     tint(50);
-    stroke(0,swatter*4,swatter*4);
-    circle(shipLoc.x, shipLoc.y, swatter*2);
-    circle(shipLoc.x, shipLoc.y, swatter*3);
-  } else if (swatter == 0){
+    stroke(255-swatter*4, -swatter*4, -swatter*4);
+    circle(shipLoc.x, shipLoc.y, swatter*4);
+    circle(shipLoc.x, shipLoc.y, swatter*6);
+    circle(shipLoc.x, shipLoc.y, swatter*8);
+  } else if (swatter == 0) {
     bigGunSound.play();
     deepBoomSound.play();
-  } else if ( swatter > -60 && swatter < 0){
+  } else if ( swatter > 0 && swatter < height) {
     noFill();
-    strokeWeight(10-(swatter/10));
-    stroke(swatter*4,swatter*4,200);
-    circle(shipLoc.x, shipLoc.y, (-1)*swatter*30);
+    strokeWeight(10+(swatter/80));
+    stroke(255-swatter*4, 255-swatter*4, 200);
+    circle(shipLoc.x, shipLoc.y, swatter*.4);
+    circle(shipLoc.x, shipLoc.y, swatter*.8);
+    circle(shipLoc.x, shipLoc.y, swatter*1.4);
   }
-  println(swatter);
-  swatter -= 2;
+  if (swatter < height && swatter > 0) {
+    swatter += (height/20);
+  } else if (swatter <= 0 && swatter > -61) {
+    swatter += (height/450);
+  } else if (swatter >= height) {
+    swatter = -61;
+  }  
+          // play the shoot sound
+          // this is a work-around for an absolute barry crocker of a problem
+          // a lot of my written assignment will be focused on this issue        
+  if ( timeToFire >= 1 ) {
+    sine.stop();
+  } else {
+    sine.amp(.2);
+    sine.freq((1-timeToFire)*1000*(1+level%3));
+    sine.play();
+  }
 }
 
 void powerUp(float x, float y) {
@@ -447,7 +493,7 @@ void powerUp(float x, float y) {
       pickOne = 0;
     } else if (pickOne == 3 && fireRate < 0.1) {
       pickOne = 0;
-    } else if (pickOne == 4 && canSwat) {
+    } else if (pickOne == 4 && canSwat > 2) {
       pickOne = 0;
     } else {     
       powerUpsList = append(powerUpsList, pickOne);
@@ -461,44 +507,6 @@ void powerUp(float x, float y) {
   }
 }
 
-/**************************************************************
- * Function: cleanArray()
- * Parameters: None
- * Returns: Void
- 
- * Desc: This is a tricky little devil, Loops through arrays
- making a copy as it goes, when it finds an expired value 
- ( end of animation for example ) It does not copy the associated 
- values ( co-ords ). It then overwrites the old array with the
- values of the new one.
- effectivly removing a group of values from an array
- 
- ***************************************************************/
-
-void cleanArray() {
-  int[] explosionsListTemp = new int[0];
-  for (int i = 0; i <= explosionsList.length-1; i=i+3) {
-    if (explosionsList[i] < 17) {
-      explosionsListTemp = append(explosionsListTemp, explosionsList[i]);
-      explosionsListTemp = append(explosionsListTemp, explosionsList[i+1]);
-      explosionsListTemp = append(explosionsListTemp, explosionsList[i+2]);
-    }
-  }
-  explosionsList = explosionsListTemp; 
-
-  thrustSound.stop();
-  laserSound.stop();
-  shotgunSound.stop();
-  dingSound.stop();
-  boomSound.stop(); 
-  biggerBoomSound.stop();
-  deepBoomSound.stop();
-  laser2Sound.stop();
-  bigGunSound.stop();
-
-  shots.clear(); 
-  sDirections.clear();
-}
 
 void drawShots() {
   //draw points for each shot from spacecraft
@@ -511,7 +519,7 @@ void drawShots() {
       sDirections.add(PVector.fromAngle(shipAngle));
       timeToFire = 0;
       //if (!laserSound.isPlaying()) {
-        laserSound.play();
+      //  laserSound.play();
       //}
     }
   } else if (!sSPACE) {
@@ -637,26 +645,38 @@ void borderWrap(PVector stroid) {
 
 
 void collisionDetection() {
-  if (crashCounter  <= 90 ) { 
+  if (crashCounter == 0) { 
     for (int i = 0; i < astroNums; i ++) {
-      if (dist(shipLoc.x, shipLoc.y, astroids[i].x, astroids[i].y) < bigRockSize/2 + ship.width/2 && !hit[i]) {
+      if (dist(shipLoc.x, shipLoc.y, astroids[i].x, astroids[i].y) < bigRockSize/2 + ship.width/2 +(swatter+61) && !hit[i]) {
         hit[i] = true;
-        if (crashCounter  == 0 ) {
+        if ( swatter > -60 ) {
+          score++;
+          crashCounter = 15;
+        } else {
           crashCounter = 210;
         }
-      } else if (dist(shipLoc.x, shipLoc.y, sAstroOne[i].x, sAstroOne[i].y) < smallRockSize/2 + ship.width/2 && !destroyedOne[i]) {
+      } else if (dist(shipLoc.x, shipLoc.y, sAstroOne[i].x, sAstroOne[i].y) < smallRockSize/2 + ship.width/2 +(swatter+61) && !destroyedOne[i]) {
         destroyedOne[i] = true;
-        if (crashCounter  == 0 ) {
+        if ( swatter > -60 ) {
+          score++;
+          crashCounter = 7;
+        } else {
           crashCounter = 210;
         }
-      } else if (dist(shipLoc.x, shipLoc.y, sAstroTwo[i].x, sAstroTwo[i].y) < smallRockSize/2 + ship.width/2 && !destroyedTwo[i]) {
+      } else if (dist(shipLoc.x, shipLoc.y, sAstroTwo[i].x, sAstroTwo[i].y) < smallRockSize/2 + ship.width/2 +(swatter+61) && !destroyedTwo[i]) {
         destroyedTwo[i] = true;
-        if (crashCounter  == 0 ) {
+        if ( swatter > -60 ) {
+          score++;
+          crashCounter = 7;
+        } else {
           crashCounter = 210;
         }
-      } else if (dist(shipLoc.x, shipLoc.y, sAstroThree[i].x, sAstroThree[i].y) < smallRockSize/2 + ship.width/2 && !destroyedThree[i]) {
+      } else if (dist(shipLoc.x, shipLoc.y, sAstroThree[i].x, sAstroThree[i].y) < smallRockSize/2 + ship.width/2 +(swatter+61) && !destroyedThree[i]) {
         destroyedThree[i] = true;
-        if (crashCounter  == 0 ) {
+        if ( swatter > -60 ) {
+          score++;
+          crashCounter = 7;
+        } else {
           crashCounter = 210;
         }
       }
@@ -781,7 +801,10 @@ void keyPressed() {
     sUP=true;
   }
   if (key == 's') { 
-    sDOWN=true;
+    if (canSwat >= 1 && crashCounter == 0 && swatter == -61) {
+      canSwat --;
+      swatter = -60;
+    }
   }
   if (key == 'd') { 
     sRIGHT=true;
@@ -790,12 +813,7 @@ void keyPressed() {
     sLEFT=true;
   }
   if (key == 'f') { 
-    cleanArray();
-    powerUpBubble = 400;
-    if (canSwat == true) {
-      canSwat = false;
-      swatter = 60;
-    };
+    //powerUpBubble = 400;
   }
 
   if (key == 'p') {
@@ -804,7 +822,7 @@ void keyPressed() {
       pUpCounter = frameCount + pUpTime;
       numPowerShots--;
     }
-    canSwat = true;
+    canSwat = 3;
   }
 }
 void keyReleased() {
@@ -824,7 +842,7 @@ void keyReleased() {
   }
   if (key == ' ') { 
     sSPACE=false;
-  } //fire a shot
+  }
   if (key == 'w') { 
     sUP=false;
   }
@@ -1007,6 +1025,19 @@ void resetArrays() {
   destroyedTwo = destroyedTwoTemp;
   boolean[] destroyedThreeTemp = new boolean [astroNums];
   destroyedThree = destroyedThreeTemp;
+    int[] explosionsListTemp = new int[0];
+    
+  for (int i = 0; i <= explosionsList.length-1; i=i+3) {
+    if (explosionsList[i] < 17) {
+      explosionsListTemp = append(explosionsListTemp, explosionsList[i]);
+      explosionsListTemp = append(explosionsListTemp, explosionsList[i+1]);
+      explosionsListTemp = append(explosionsListTemp, explosionsList[i+2]);
+    }
+  }
+  explosionsList = explosionsListTemp; 
+
+  shots.clear(); 
+  sDirections.clear();
 }
 
 // Reset all starter variables, resets arrays and calls for creation of starter asteroids.
