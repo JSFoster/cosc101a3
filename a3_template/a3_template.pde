@@ -91,8 +91,8 @@ boolean restartButton = false;
 
 void setup() {
   //fullScreen();
-  size(1440, 900);
-  //size(1000, 600);
+  //size(1440, 900);
+  size(1000, 600);
 
   // Initialise starter variables, clears arrays and creates calls for initial asteroids.
   resetGame();
@@ -694,7 +694,7 @@ void startScreen () {
   strokeWeight(3);
   textSize(125);
   fill(255, 0, 0);
-  text("ASTEROIDS", width/2, height/3);
+  text("ASTEROIDS", width/2, .2*height);
   textSize(70);
   if (startButton) {
     stroke(0, 255, 0);
@@ -702,29 +702,29 @@ void startScreen () {
     stroke(255);
   }
   fill(0);
-  rect(width/2, height/3+175, 420, 100);
+  rect(width/2, .4*height, 420, 100);
   fill(255, 0, 0);
-  text("START", width/2, height/3 + 200);
+  text("START", width/2, .4*height+25);
   if (highScoreButton) {
     stroke(0, 255, 0);
   } else {
     stroke(255);
   }
   fill(0);
-  rect(width/2, height/3+325, 420, 100);
+  rect(width/2, .6*height, 420, 100);
   fill(255, 0, 0);
-  text("HIGHSCORE", width/2, height/3 + 350);
+  text("HIGHSCORE", width/2, .6*height+25);
   if (exitButton) {
     stroke(0, 255, 0);
   } else {
     stroke(255);
   }
   fill(0);
-  rect(width/2, height/3+475, 420, 100);
+  rect(width/2, .8*height, 420, 100);
   fill(255, 0, 0);
-  text("EXIT", width/2, height/3 + 500);
+  text("EXIT", width/2, .8*height+25);
   popMatrix();
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+125 && mouseY < height/3+225) {
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .4*height-50 && mouseY < .4*height+50) {
     startButton = true;
     if (mousePressed && restartButton == false) {
       startScreen = false;
@@ -732,12 +732,12 @@ void startScreen () {
   } else {
     startButton = false;
   }
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+275 && mouseY < height/3+375) {
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .6*height-50 && mouseY < .6*height+50) {
     highScoreButton = true;
   } else {
     highScoreButton = false;
   }
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+425 && mouseY < height/3+525) {
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .8*height-50 && mouseY < .8*height+50) {
     exitButton = true;
     if (mousePressed && restartButton == false) {
       exit();
