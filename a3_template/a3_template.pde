@@ -18,7 +18,7 @@ SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound,
   biggerBoomSound, deepBoomSound, laser2Sound, bigGunSound;
 SinOsc sine;
 
-PImage frame, hud, ship, ufo, thrust1, thrust2, heart, blueBall, purpleBall, bubble;
+PImage frame, hud, ship, thrust1, thrust2, heart, blueBall, purpleBall, bubble;
 PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
 int[] explosionsList = {};
 float[] powerUpsList = {};
@@ -72,7 +72,7 @@ boolean powerShot = false;
 //int pUpTime = 500;
 int numPowerShots = 1;
 int powerUpFreq = 9; // how often are powerUps spawned (1->10)
-int powerUpBubble = 0; // powerUp energys
+int powerUpBubble = 0;
 int canSwat = 0;
 int swatter = -61;
 int powerUpCounter = 0;
@@ -82,6 +82,7 @@ int score, lives, level;
 int levelMax = 20;
 boolean playerAlive;
 boolean gameOver;
+int levelTransCounter = 100;
 
 // Start screen bools
 boolean startScreen = true;
@@ -112,7 +113,6 @@ void setup() {
   ship       = loadImage("ship.png");
   thrust1    = loadImage("thrust1.png");
   thrust2    = loadImage("thrust2.png");
-  ufo        = loadImage ("ufo.png");
   heart      = loadImage ("heart.png");
   heart.resize(80, 80);
   blueBall   = loadImage ("blueball.png");
@@ -283,7 +283,11 @@ void drawShip() {
 
 void drawBackGround() {
   background(0);
-  tint(95);
+  if (levelTransCounter < 0){
+    tint((levelTransCounter*-1));
+  } else if (levelTransCounter >= 0){
+    tint(levelTransCounter);
+  }
   image(backGroundImages[backGroundRandomizer], width/2, height/2);
   if (nebulaPosRandomizerY > height+350) {
     nebulaPosRandomizerY = -350;
@@ -310,13 +314,13 @@ void drawHud() {
   textAlign(CENTER);
   image(hud, 0, 0);
   if (lives > 0) {
-    image(ship, -102, -67, 23, 35);
+    image(ship, -78, -67, 50, 60);
   }
   if (lives > 1) {
-    image(ship, -80, -67, 23, 35);
+    image(ship, -7, -20, 50, 60);
   }
   if (lives > 2) {
-    image(ship, -58, -67, 23, 35);
+    image(ship, 70, 20, 50, 60);
   }
   fill(200, 100, 00);
   textSize(22);
@@ -325,23 +329,30 @@ void drawHud() {
   text("Level", -7, 58);
   text(level, -7, 88);
 
-  if (numPowerShots > 0) {
-    image(powerBullet, 0, -12, 40, 40); // powerup placeholder
-  }
   if (canSwat >= 1) {
-    image(blueBall, 70, 5, 30, 30);
+    image(blueBall, 125, 55, 30, 30);
     if (canSwat >= 2) {
-      image(blueBall, 52, 35, 30, 30);
+      image(blueBall, 160, 55, 30, 30);
     }
     if (canSwat >= 3) {
-      image(blueBall, 88, 35, 30, 30);
+      image(blueBall, 195, 55, 30, 30);
     }
     textSize(22);
     if (frameCount % 60 < 45 ) {
-      text("Press S to Engage The BigSwat 9002!", 250, 95);
+      text("Press S to Engage The BigSwat 9002!", 300, 95);
+    }
+  }
+  if ( levelTransCounter < 100 ){
+    levelTransCounter ++;
+    if (frameCount % 60 < 45 ) {
+      textSize(42);
+      text("NEXT LEVEL!", 280, -95);
     }
   }
   popMatrix();
+  if (numPowerShots > 0) {
+    image(powerBullet, width+50, height+50, pUpShot*4, pUpShot*4);
+  }
 }
 
 void createImageArrays() {
@@ -427,13 +438,13 @@ void drawEffects() {
     
         // player collecting power-ups
     if (powerUpsList.length > 2){
-      if (dist(shipLoc.x, shipLoc.y, powerUpsList[i+1], powerUpsList[i+2]) < smallRockSize/2 + ship.width/2){ 
+      if (dist(shipLoc.x, shipLoc.y, powerUpsList[i+1], powerUpsList[i+2]) < bigRockSize/2 + ship.width/2){ 
         if (powerUpsList[i] == 1) { 
           lives++;
         } else if (powerUpsList[i] == 2) { 
           powerUpBubble = 400;
         } else if (powerUpsList[i] == 3) { 
-          pUpShot = 200;
+          pUpShot = 250;
           powerShot = true;
         } else if (powerUpsList[i] == 4) { 
           canSwat = 3;
@@ -494,7 +505,7 @@ void powerUp(float x, float y) {
       pickOne = 0;
     } else if (pickOne == 2 && powerUpBubble > 50) {
       pickOne = 0;
-    } else if (pickOne == 3 && fireRate < 0.1) {
+    } else if (pickOne == 3 && pUpShot > 50) {
       pickOne = 0;
     } else if (pickOne == 4 && canSwat > 2) {
       pickOne = 0;
@@ -986,6 +997,9 @@ boolean isNextLevel() {
     }
     if (counter == astroNums) {
       nextLevel = true;
+      if ( levelTransCounter == 100 ){
+        levelTransCounter = -100;
+      }
     }
   }
   return nextLevel;
@@ -1003,7 +1017,7 @@ boolean isNextLevel() {
  /////////TODO finish the game once max level complete/////////////////////////////////////////////
  ***************************************************************/
 void levelUp() {
-  if (isNextLevel() && lives > 0 && crashCounter <= 90) {
+  if (isNextLevel() && lives > 0 && crashCounter <= 90 && levelTransCounter > 0) {
     level++;
     crashCounter = 0;
     backGroundRandomizer = level % 4;
@@ -1066,7 +1080,6 @@ void resetArrays() {
     }
   }
   explosionsList = explosionsListTemp; 
-
   shots.clear(); 
   sDirections.clear();
 }
