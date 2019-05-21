@@ -1,18 +1,17 @@
-/**************************************************************
+/**********************************************************************
  * File: a3.pde
  * Group: Joel Foster, Mark Anderson, Leigh Dayes (Group 30)
  * Date: 14/03/2018
  * Course: COSC101 - Software Development Studio 1
- * Desc: Astroids is a ...
- * ...
- * Usage: Make sure to run in the processing environment and press play etc...
- * Notes: If any third party items are use they need to be credited (don't use anything with copyright - unless you have permission)
- * ...
- **************************************************************
- sound effects sourced from: https://freesound.org
- explosion image sourced from: COSC101 lecture 14
- All other images sourced from: https://www.kisspng.com 
- */
+ * Desc: Asteroids is a 2D spaceship flying shooter. Shoot the
+ *       asteroids to level up and make sure you collect those
+ *       power-ups!
+ * Usage: Make sure to run in the processing environment and press play.
+ *        Controls use arrow keys to move and space bar to shoot.
+ * Notes:  Sound effects sourced from: https://freesound.org
+ *         Explosion image sourced from: COSC101 lecture 14
+ *         All other images sourced from: https://www.kisspng.com 
+ **********************************************************************/
 
 import processing.sound.*;
 SoundFile thrustSound, laserSound, shotgunSound, dingSound, boomSound, 
@@ -24,6 +23,7 @@ PImage[] explosionImages, backGroundImages, nebulaImages, rockImages;
 int[] explosionsList = {};
 float[] powerUpsList = {};
 int nebulaRandomizer, backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
+PFont font;
 
 int astroNums = 1;
 int increaseAstros;
@@ -62,20 +62,21 @@ ArrayList<PVector> shots= new ArrayList<PVector>();
 ArrayList<PVector> sDirections= new ArrayList<PVector>();
 PVector shotVel;
 float shotSpeed = 25;
-float pUpShotSpeed = shotSpeed * 2;
+float pUpFireRate = 0.2;
 float fireRate = 0.1; // Adjust 0.0 - 1.0
 float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
 PImage bullet;
 PImage powerBullet;
 boolean powerShot = false;
-int pUpCounter;
-int pUpTime = 500;
+//int pUpCounter;
+//int pUpTime = 500;
 int numPowerShots = 1;
 int powerUpFreq = 9; // how often are powerUps spawned (1->10)
 int powerUpBubble = 0; // powerUp energys
 int canSwat = 0;
 int swatter = -61;
 int powerUpCounter = 0;
+int pUpShot = 0;
 
 int score, lives, level;
 int levelMax = 20;
@@ -85,14 +86,13 @@ boolean gameOver;
 // Start screen bools
 boolean startScreen = true;
 boolean startButton = false;
-boolean highScoreButton = false;
 boolean exitButton = false;
 boolean restartButton = false;
 
 void setup() {
   //fullScreen();
-  //size(1440, 900);
-  size(1000, 600);
+  size(1440, 900);
+  //size(1000, 600);
 
   // Initialise starter variables, clears arrays and creates calls for initial asteroids.
   resetGame();
@@ -143,8 +143,10 @@ void setup() {
   sine = new SinOsc(this);
 
   createAstro();
-  //initialise shapes if needed
-
+  
+  font = createFont("moonhouse.ttf", 10);
+  textFont(font);
+  
   // Create bullet graphic.
   PGraphics pg = createGraphics(10, 10);
   pg.beginDraw();
@@ -431,7 +433,8 @@ void drawEffects() {
         } else if (powerUpsList[i] == 2) { 
           powerUpBubble = 400;
         } else if (powerUpsList[i] == 3) { 
-          //do a thing;
+          pUpShot = 200;
+          powerShot = true;
         } else if (powerUpsList[i] == 4) { 
           canSwat = 3;
         }
@@ -507,30 +510,41 @@ void powerUp(float x, float y) {
   }
 }
 
+/**************************************************************
+ * Function: drawShots
+ 
+ * Desc: Draws the shots based on ship position and angle.
+         Also controls the rate of fire. Using a timeToFire
+         counter. Can be altered for use with power ups.
+ ***************************************************************/
 
 void drawShots() {
-  //draw points for each shot from spacecraft
-  //at location and updated to new location
   fill(255);
   if (sSPACE) {
+    if (powerShot) {
+      fireRate = pUpFireRate;
+    } else {
+      fireRate = 0.1;
+    }
     timeToFire += fireRate;
     if (timeToFire >= 1) {
       shots.add(new PVector(shipLoc.x, shipLoc.y));
       sDirections.add(PVector.fromAngle(shipAngle));
       timeToFire = 0;
-      //if (!laserSound.isPlaying()) {
-      //  laserSound.play();
-      //}
     }
   } else if (!sSPACE) {
     timeToFire = 1;
   }
+  if (pUpShot > 0) {
+    pUpShot--;
+  } else {
+    powerShot = false;
+  }
   for (int i = 0; i < shots.size(); i++) {
-    powerUpTimer();
     if (powerShot) {
       image(powerBullet, shots.get(i).x+5, shots.get(i).y+7);
       shotVel = sDirections.get(i).normalize();
-      shotVel.mult(pUpShotSpeed);
+      shotVel.mult(shotSpeed);
       shots.get(i).add(shotVel);
     } else {
       image(bullet, shots.get(i).x, shots.get(i).y);
@@ -643,7 +657,14 @@ void borderWrap(PVector stroid) {
   }
 }
 
-
+/**************************************************************
+ * Function: collisionDetection
+ 
+ * Desc: Determines distance between the ship and the asteroid.
+         If collision is detected it will start timer for crash
+         sequence and destroy collided asteroid. 
+ ***************************************************************/
+ 
 void collisionDetection() {
   if (crashCounter == 0) { 
     for (int i = 0; i < astroNums; i ++) {
@@ -684,7 +705,13 @@ void collisionDetection() {
   }
 }
 
-
+/**************************************************************
+ * Function: startScreen
+ 
+ * Desc: Intial start screen and menu system. Sets text, checks
+         button presses. Start or Exit game.
+ ***************************************************************/
+ 
 void startScreen () {
   drawBackGround();
   image(frame, width/2, height/2);
@@ -693,38 +720,29 @@ void startScreen () {
   rectMode(CENTER);
   strokeWeight(3);
   textSize(125);
-  fill(255, 0, 0);
-  text("ASTEROIDS", width/2, .2*height);
+  fill(150,0 ,0);
+  text("ASTEROIDS", width/2, .3*height);
   textSize(70);
   if (startButton) {
-    stroke(0, 255, 0);
+    stroke(0, 150, 0);
   } else {
-    stroke(255);
+    stroke(255, 150);
   }
-  fill(0);
-  rect(width/2, .4*height, 420, 100);
-  fill(255, 0, 0);
-  text("START", width/2, .4*height+25);
-  if (highScoreButton) {
-    stroke(0, 255, 0);
-  } else {
-    stroke(255);
-  }
-  fill(0);
-  rect(width/2, .6*height, 420, 100);
-  fill(255, 0, 0);
-  text("HIGHSCORE", width/2, .6*height+25);
+  fill(0, 0, 0, 200);
+  rect(width/2, .5*height, 420, 100);
+  fill(150, 0, 0);
+  text("START", width/2, .5*height+20);
   if (exitButton) {
-    stroke(0, 255, 0);
+    stroke(0, 150, 0);
   } else {
-    stroke(255);
+    stroke(255, 150);
   }
-  fill(0);
-  rect(width/2, .8*height, 420, 100);
-  fill(255, 0, 0);
-  text("EXIT", width/2, .8*height+25);
+  fill(0, 0, 0, 200);
+  rect(width/2, .7*height, 420, 100);
+  fill(150, 0, 0);
+  text("EXIT", width/2, .7*height+20);
   popMatrix();
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .4*height-50 && mouseY < .4*height+50) {
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .5*height-50 && mouseY < .5*height+50) {
     startButton = true;
     if (mousePressed && restartButton == false) {
       startScreen = false;
@@ -732,12 +750,7 @@ void startScreen () {
   } else {
     startButton = false;
   }
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .6*height-50 && mouseY < .6*height+50) {
-    highScoreButton = true;
-  } else {
-    highScoreButton = false;
-  }
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .8*height-50 && mouseY < .8*height+50) {
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .7*height-50 && mouseY < .7*height+50) {
     exitButton = true;
     if (mousePressed && restartButton == false) {
       exit();
@@ -750,6 +763,14 @@ void startScreen () {
   }
 }
 
+/**************************************************************
+ * Function: gameOverScreen
+ 
+ * Desc: Displays when game is over/no more lives.
+         Displays score and allows for restart which will go
+         to start screen again.
+ ***************************************************************/
+
 void gameOverScreen () {
   drawBackGround();
   drawEffects();
@@ -758,19 +779,28 @@ void gameOverScreen () {
   textAlign(CENTER);
   strokeWeight(3);
   textSize(125);
-  fill(255, 0, 0);
-  text("GAME OVER", width/2, height/3);
+  fill(150, 0, 0);
+  text("GAME OVER", width/2, .3*height);
   textSize(70);
-  text("SCORE: " + score, width/2, height/3 + 200);
+  text("SCORE: " + score, width/2, .5*height);
   fill(0);
-  rect(width/2, height/3+475, 420, 100);
-  fill(255, 0, 0);
-  text("AGAIN?", width/2, height/3 + 500);
+  rect(width/2, .7*height, 420, 100);
+  fill(150, 0, 0);
+  text("AGAIN?", width/2, .7*height + 20);
+  if (restartButton) {
+    stroke(0, 150, 0);
+  } else {
+    stroke(255, 150);
+  }
   popMatrix();
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > height/3+425 && mouseY < height/3+525 && mousePressed) {
-    resetGame();
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .7*height-50 && mouseY < .7*height+50) {
+    if (mousePressed) {
+      resetGame();
+      startScreen = true;
+    }
     restartButton = true;
-    startScreen = true;
+  } else {
+    restartButton = false;
   }
 }
 
@@ -816,7 +846,7 @@ void keyPressed() {
     //powerUpBubble = 400;
   }
 
-  if (key == 'p') {
+/*  if (key == 'p') {
     if (numPowerShots > 0 && !powerShot) {
       powerShot = true;
       pUpCounter = frameCount + pUpTime;
@@ -824,6 +854,7 @@ void keyPressed() {
     }
     canSwat = 3;
   }
+*/
 }
 void keyReleased() {
   if (key == CODED) {
@@ -1040,7 +1071,13 @@ void resetArrays() {
   sDirections.clear();
 }
 
-// Reset all starter variables, resets arrays and calls for creation of starter asteroids.
+/**************************************************************
+ * Function: resetGame
+ 
+ * Desc: Called whenever initial variables need to be reset.
+         Re-initializes score/lives/arrays/etc.
+ ***************************************************************/
+ 
 void resetGame() {
   astroNums = 1;
   increaseAstros = 1;
@@ -1056,9 +1093,13 @@ void resetGame() {
   resetArrays();
   createAstro();
 }
-
+/*
 void powerUpTimer() {
-  if (frameCount == pUpCounter) {
-    powerShot = false;
+  if (pUpCounter <= 0) {
+//    powerShot = false;
+    pUpCounter = 300;
+  } else {
+    pUpCounter--;
   }
 }
+*/
