@@ -83,6 +83,7 @@ int levelMax = 20;
 boolean playerAlive;
 boolean gameOver;
 int levelTransCounter = 100;
+boolean pauseButton = true;
 
 // Start screen bools
 boolean startScreen = true;
@@ -94,11 +95,9 @@ void setup() {
   //fullScreen();
   size(1440, 900);
   //size(1000, 600);
-
-  // Initialise starter variables, clears arrays and creates calls for initial asteroids.
   resetGame();
 
-  bigRockSize = width/12;  // if we are going to use scaling here, this has to be after fullscreen is called
+  bigRockSize = width/12;  // this has to be after fullscreen is called
   smallRockSize = width/24;
 
   shipLoc = new PVector(width/2, height/2);
@@ -107,29 +106,13 @@ void setup() {
   stroke(255);
 
   imageMode(CENTER);
-  frame      = loadImage("frame.png");
-  frame.resize(width, height);
-  hud        = loadImage("hud.png");
-  ship       = loadImage("ship.png");
-  thrust1    = loadImage("thrust1.png");
-  thrust2    = loadImage("thrust2.png");
-  heart      = loadImage ("heart.png");
-  heart.resize(80, 80);
-  blueBall   = loadImage ("blueball.png");
-  blueBall.resize(80, 80);
-  purpleBall = loadImage ("purpleball.png");
-  purpleBall.resize(80, 80);
-  bubble     = loadImage ("bubble.png");
 
   nebulaRandomizer     =int(random(0, 4));
   backGroundRandomizer =level % 4;
   nebulaPosRandomizerX =int(random(0, width));
   nebulaPosRandomizerY =-350;
-  explosionImages  = new PImage[17];
-  backGroundImages = new PImage[4];
-  nebulaImages     = new PImage[4];
-  rockImages       = new PImage[4];
-  createImageArrays();
+
+  loadImages(); // creates image arrays and loads all images
 
   thrustSound     = new SoundFile(this, "thrust.mp3");
   laserSound      = new SoundFile(this, "laser.mp3");
@@ -143,28 +126,9 @@ void setup() {
   sine = new SinOsc(this);
 
   createAstro();
-  
+
   font = createFont("moonhouse.ttf", 10);
   textFont(font);
-  
-  // Create bullet graphic.
-  PGraphics pg = createGraphics(10, 10);
-  pg.beginDraw();
-  pg.strokeWeight(2);
-  pg.stroke(0, 255, 0);
-  pg.ellipse(5, 5, 5, 5);
-  pg.filter(BLUR, 2);
-  pg.endDraw();
-  bullet = pg.get();
-  //create power up bullet
-  PGraphics pUp = createGraphics(30, 30);
-  pUp.beginDraw();
-  pUp.strokeWeight(4);
-  pUp.stroke(255, 0, 0);
-  pUp.ellipse(10, 10, 10, 10);
-  pUp.filter(BLUR, 2);
-  pUp.endDraw();
-  powerBullet = pUp.get();
 }
 
 void draw() {
@@ -173,11 +137,11 @@ void draw() {
   } else if (gameOver) {
     gameOverScreen();
   } else {
+
     drawBackGround();
     collisionDetection();
     drawShots();
     drawShip();
-    // report if game over or won
     drawAstroids();
     drawEffects();
     drawHud();
@@ -186,16 +150,11 @@ void draw() {
 }
 
 /**************************************************************
- * Function: myFunction()
+ * Function: moveShip()
+ * Parameters: none
+ * Returns: Void
  
- * Parameters: None ( could be integer(x), integer(y) or String(myStr))
- 
- * Returns: Void ( again this could return a String or integer/float type )
- 
- * Desc: Each funciton should have appropriate documentation.
- This is designed to benefit both the marker and your team mates.
- So it is better to keep it up to date, same with usage in the header comment
- 
+ * Desc:  
  ***************************************************************/
 
 void moveShip() {
@@ -229,6 +188,14 @@ void moveShip() {
   shipVel.limit(speedLimit);      // limit speed
   shipLoc.add(shipVel);           // change ship location
 }
+
+/**************************************************************
+ * Function: drawShip()
+ * Parameters: none
+ * Returns: Void
+ 
+ * Desc:  
+ ***************************************************************/
 
 void drawShip() {
   if (crashCounter>0) {
@@ -281,11 +248,19 @@ void drawShip() {
   popMatrix();
 }
 
+/**************************************************************
+ * Function: drawBackGround()
+ * Parameters: none
+ * Returns: Void
+ 
+ * Desc:  
+ ***************************************************************/
+
 void drawBackGround() {
   background(0);
-  if (levelTransCounter < 0){
+  if (levelTransCounter < 0) {
     tint((levelTransCounter*-1));
-  } else if (levelTransCounter >= 0){
+  } else if (levelTransCounter >= 0) {
     tint(levelTransCounter);
   }
   image(backGroundImages[backGroundRandomizer], width/2, height/2);
@@ -298,6 +273,14 @@ void drawBackGround() {
   image(nebulaImages[nebulaRandomizer], nebulaPosRandomizerX, nebulaPosRandomizerY++);
   noTint();
 }
+
+/**************************************************************
+ * Function: drawHud()
+ * Parameters: none
+ * Returns: Void
+ 
+ * Desc:  
+ ***************************************************************/
 
 void drawHud() {
   if (powerUpBubble>0) {
@@ -342,20 +325,68 @@ void drawHud() {
       text("Press S to Engage The BigSwat 9002!", 300, 95);
     }
   }
-  if ( levelTransCounter < 100 ){
-    levelTransCounter ++;
-    if (frameCount % 60 < 45 ) {
-      textSize(42);
-      text("NEXT LEVEL!", 280, -95);
-    }
+  if ( levelTransCounter < 100 ) {
+    levelTransCounter +=3;
+    println(levelTransCounter);
+    textSize(62);
+    text("NEXT LEVEL!", 280, -95);
+  }
+  if (numPowerShots > 0) {
+    stroke(50+(pUpShot/1.5), 0, 0);
+    strokeWeight(5+(pUpShot/20));
+    line( 140, 20, 140+(pUpShot), 20);
   }
   popMatrix();
-  if (numPowerShots > 0) {
-    image(powerBullet, width+50, height+50, pUpShot*4, pUpShot*4);
-  }
 }
 
-void createImageArrays() {
+/**************************************************************
+ * Function: loadImages()
+ * Parameters: none
+ * Returns: Void
+ 
+ * Desc: loads graphics, should just be in setup()
+ was in setup, moved here to clean up,.. just loading. 
+ ***************************************************************/
+
+void loadImages() {
+
+  explosionImages  = new PImage[17];
+  backGroundImages = new PImage[4];
+  nebulaImages     = new PImage[4];
+  rockImages       = new PImage[4];
+
+  frame      = loadImage("frame.png");
+  frame.resize(width, height);
+  hud        = loadImage("hud.png");
+  ship       = loadImage("ship.png");
+  thrust1    = loadImage("thrust1.png");
+  thrust2    = loadImage("thrust2.png");
+  heart      = loadImage ("heart.png");
+  heart.resize(80, 80);
+  blueBall   = loadImage ("blueball.png");
+  blueBall.resize(80, 80);
+  purpleBall = loadImage ("purpleball.png");
+  purpleBall.resize(80, 80);
+  bubble     = loadImage ("bubble.png");
+
+  // Create bullet graphic.
+  PGraphics pg = createGraphics(10, 10);
+  pg.beginDraw();
+  pg.strokeWeight(2);
+  pg.stroke(0, 255, 0);
+  pg.ellipse(5, 5, 5, 5);
+  pg.filter(BLUR, 2);
+  pg.endDraw();
+  bullet = pg.get();
+  //create power up bullet
+  PGraphics pUp = createGraphics(30, 30);
+  pUp.beginDraw();
+  pUp.strokeWeight(4);
+  pUp.stroke(255, 0, 0);
+  pUp.ellipse(10, 10, 10, 10);
+  pUp.filter(BLUR, 2);
+  pUp.endDraw();
+  powerBullet = pUp.get();
 
   //explosion
   for (int i = 1; i <= 17; i++) {
@@ -385,7 +416,19 @@ void createImageArrays() {
   }
 }
 
+/**************************************************************
+ * Function: drawEffects()
+ * Parameters: none
+ * Returns: Void
+ 
+ * Desc: Draws graphics, should just be in Draw()
+ 5 functions put together because they are all called together every frame.
+ 
+ 
+ ***************************************************************/
+
 void drawEffects() {
+
   //draw explosions
   for (int i = 0; i <= explosionsList.length-1; i=i+3) {
     if (explosionsList[i]<17) {
@@ -395,7 +438,7 @@ void drawEffects() {
       }
     }
   }
-  
+
   //draw floating powerups
   for (int i = 0; i <= powerUpsList.length-1; i=i+5) {
     pushMatrix();    
@@ -409,7 +452,9 @@ void drawEffects() {
     } else if (powerUpsList[i]==2) {
       image(bubble, 0, 0);
     } else if (powerUpsList[i]==3) {
+      tint(200, 0, 0);
       image(purpleBall, 0, 0);
+      noTint();
     } else if (powerUpsList[i]==4) { 
       image(blueBall, 0, 0);
     }
@@ -435,10 +480,10 @@ void drawEffects() {
       powerUpsList = powerUpsListTemp;
     }
     powerUpCounter --;
-    
-        // player collecting power-ups
-    if (powerUpsList.length > 2){
-      if (dist(shipLoc.x, shipLoc.y, powerUpsList[i+1], powerUpsList[i+2]) < bigRockSize/2 + ship.width/2){ 
+
+    // player collecting power-ups
+    if (powerUpsList.length > 2) {
+      if (dist(shipLoc.x, shipLoc.y, powerUpsList[i+1], powerUpsList[i+2]) < bigRockSize/2 + ship.width/2) { 
         if (powerUpsList[i] == 1) { 
           lives++;
         } else if (powerUpsList[i] == 2) { 
@@ -454,7 +499,6 @@ void drawEffects() {
         dingSound.play();
       }
     }
-   
   }
 
   //draw swatter
@@ -486,9 +530,9 @@ void drawEffects() {
   } else if (swatter >= height) {
     swatter = -61;
   }  
-          // play the shoot sound
-          // this is a work-around for an absolute barry crocker of a problem
-          // a lot of my written assignment will be focused on this issue        
+  // play the shoot sound
+  // this is a work-around for an absolute barry crocker of a problem
+  // a lot of my written assignment will be focused on this issue        
   if ( timeToFire >= 1 ) {
     sine.stop();
   } else {
@@ -497,6 +541,18 @@ void drawEffects() {
     sine.play();
   }
 }
+
+/**************************************************************
+ * Function: powerUp()
+ * Parameters: X and Y co-ords
+ * Returns: Void
+ 
+ * Desc: Spawns Power-Up icons.
+ first checks that their are no current power-up icons active,
+ then picks which one to spawn ( random ),
+ THEN cancels itself if condition is met for particular chosen power-up.
+ (eg. already full health)
+ ***************************************************************/
 
 void powerUp(float x, float y) {
   if ( powerUpsList.length < 1 ) {
@@ -525,8 +581,8 @@ void powerUp(float x, float y) {
  * Function: drawShots
  
  * Desc: Draws the shots based on ship position and angle.
-         Also controls the rate of fire. Using a timeToFire
-         counter. Can be altered for use with power ups.
+ Also controls the rate of fire. Using a timeToFire
+ counter. Can be altered for use with power ups.
  ***************************************************************/
 
 void drawShots() {
@@ -672,10 +728,10 @@ void borderWrap(PVector stroid) {
  * Function: collisionDetection
  
  * Desc: Determines distance between the ship and the asteroid.
-         If collision is detected it will start timer for crash
-         sequence and destroy collided asteroid. 
+ If collision is detected it will start timer for crash
+ sequence and destroy collided asteroid. 
  ***************************************************************/
- 
+
 void collisionDetection() {
   if (crashCounter == 0) { 
     for (int i = 0; i < astroNums; i ++) {
@@ -720,9 +776,9 @@ void collisionDetection() {
  * Function: startScreen
  
  * Desc: Intial start screen and menu system. Sets text, checks
-         button presses. Start or Exit game.
+ button presses. Start or Exit game.
  ***************************************************************/
- 
+
 void startScreen () {
   drawBackGround();
   image(frame, width/2, height/2);
@@ -731,7 +787,7 @@ void startScreen () {
   rectMode(CENTER);
   strokeWeight(3);
   textSize(125);
-  fill(150,0 ,0);
+  fill(150, 0, 0);
   text("ASTEROIDS", width/2, .3*height);
   textSize(70);
   if (startButton) {
@@ -778,8 +834,8 @@ void startScreen () {
  * Function: gameOverScreen
  
  * Desc: Displays when game is over/no more lives.
-         Displays score and allows for restart which will go
-         to start screen again.
+ Displays score and allows for restart which will go
+ to start screen again.
  ***************************************************************/
 
 void gameOverScreen () {
@@ -815,6 +871,14 @@ void gameOverScreen () {
   }
 }
 
+/**************************************************************
+ * Function: keyPressed() & keyReleased()
+ * Parameters: None
+ * Returns: Void
+ 
+ * Desc: Makes the keys work, support for arrows, wasd and WASD.
+ pause, gun disabler, and big-swat activation are done here.
+ ***************************************************************/
 
 void keyPressed() {
   if (key == CODED) {
@@ -838,35 +902,43 @@ void keyPressed() {
       sSPACE=true;
     }
   }                //fire a shot
-  if (key == 'w') { 
+  if (key == 'w' || key == 'W' ) { 
     sUP=true;
   }
-  if (key == 's') { 
+  if (key == 's' || key == 'S' ) { 
     if (canSwat >= 1 && crashCounter == 0 && swatter == -61) {
       canSwat --;
       swatter = -60;
     }
   }
-  if (key == 'd') { 
+  if (key == 'd' || key == 'D' ) { 
     sRIGHT=true;
   }
-  if (key == 'a') { 
+  if (key == 'a' || key == 'A' ) { 
     sLEFT=true;
   }
   if (key == 'f') { 
+    if (pauseButton) {
+      noLoop();
+      pauseButton = false;
+      sine.stop();
+      thrustSound.stop();
+    } else {
+      loop();
+      pauseButton = true;
+    }
+  }
+  if (key == 'p') {
+    //if (numPowerShots > 0 && !powerShot) {
+    //  powerShot = true;
+    //  pUpCounter = frameCount + pUpTime;
+    //  numPowerShots--;
+    //}
+    //canSwat = 3;
     //powerUpBubble = 400;
   }
-
-/*  if (key == 'p') {
-    if (numPowerShots > 0 && !powerShot) {
-      powerShot = true;
-      pUpCounter = frameCount + pUpTime;
-      numPowerShots--;
-    }
-    canSwat = 3;
-  }
-*/
 }
+
 void keyReleased() {
   if (key == CODED) {
     if (keyCode == UP) { 
@@ -885,16 +957,16 @@ void keyReleased() {
   if (key == ' ') { 
     sSPACE=false;
   }
-  if (key == 'w') { 
+  if (key == 'w' || key == 'W' ) { 
     sUP=false;
   }
-  if (key == 's') { 
+  if (key == 's' || key == 'S' ) { 
     sDOWN=false;
   }
-  if (key == 'd') { 
+  if (key == 'd' || key == 'D' ) { 
     sRIGHT=false;
   }
-  if (key == 'a') { 
+  if (key == 'a' || key == 'A' ) { 
     sLEFT=false;
   }
 }
@@ -997,13 +1069,14 @@ boolean isNextLevel() {
     }
     if (counter == astroNums) {
       nextLevel = true;
-      if ( levelTransCounter == 100 ){
+      if ( levelTransCounter >= 100 ) {
         levelTransCounter = -100;
       }
     }
   }
   return nextLevel;
 }
+
 /**************************************************************
  * Function: levelUp
  
@@ -1016,6 +1089,7 @@ boolean isNextLevel() {
  
  /////////TODO finish the game once max level complete/////////////////////////////////////////////
  ***************************************************************/
+ 
 void levelUp() {
   if (isNextLevel() && lives > 0 && crashCounter <= 90 && levelTransCounter > 0) {
     level++;
@@ -1070,8 +1144,8 @@ void resetArrays() {
   destroyedTwo = destroyedTwoTemp;
   boolean[] destroyedThreeTemp = new boolean [astroNums];
   destroyedThree = destroyedThreeTemp;
-    int[] explosionsListTemp = new int[0];
-    
+  int[] explosionsListTemp = new int[0];
+
   for (int i = 0; i <= explosionsList.length-1; i=i+3) {
     if (explosionsList[i] < 17) {
       explosionsListTemp = append(explosionsListTemp, explosionsList[i]);
@@ -1088,9 +1162,9 @@ void resetArrays() {
  * Function: resetGame
  
  * Desc: Called whenever initial variables need to be reset.
-         Re-initializes score/lives/arrays/etc.
+ Re-initializes score/lives/arrays/etc.
  ***************************************************************/
- 
+
 void resetGame() {
   astroNums = 1;
   increaseAstros = 1;
@@ -1108,11 +1182,11 @@ void resetGame() {
 }
 /*
 void powerUpTimer() {
-  if (pUpCounter <= 0) {
-//    powerShot = false;
-    pUpCounter = 300;
-  } else {
-    pUpCounter--;
-  }
-}
-*/
+ if (pUpCounter <= 0) {
+ //    powerShot = false;
+ pUpCounter = 300;
+ } else {
+ pUpCounter--;
+ }
+ }
+ */
