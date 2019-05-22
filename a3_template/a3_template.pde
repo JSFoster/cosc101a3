@@ -82,6 +82,7 @@ int score, lives, level;
 int levelMax = 20;
 boolean playerAlive;
 boolean gameOver;
+boolean gameWon = false;
 int levelTransCounter = 100;
 boolean pauseButton = true;
 
@@ -97,7 +98,7 @@ void setup() {
   //size(1000, 600);
   resetGame();
 
-  bigRockSize = width/12;  // this has to be after fullscreen is called
+  bigRockSize = width/12; 
   smallRockSize = width/24;
 
   shipLoc = new PVector(width/2, height/2);
@@ -134,8 +135,10 @@ void setup() {
 void draw() {
   if (startScreen) {
     startScreen();
-  } else if (gameOver) {
-    gameOverScreen();
+  } else if (gameOver && !gameWon) {
+    gameOverScreen("GAME OVER");
+  } else if (gameOver && gameWon) {
+    gameOverScreen("YOU WIN");
   } else {
 
     drawBackGround();
@@ -788,7 +791,7 @@ void startScreen () {
   strokeWeight(3);
   textSize(125);
   fill(150, 0, 0);
-  text("ASTEROIDS", width/2, .3*height);
+  text("ASTEROIDS", width/2, .2*height);
   textSize(70);
   if (startButton) {
     stroke(0, 150, 0);
@@ -796,20 +799,24 @@ void startScreen () {
     stroke(255, 150);
   }
   fill(0, 0, 0, 200);
-  rect(width/2, .5*height, 420, 100);
+  rect(width/2, .4*height, 420, 100);
   fill(150, 0, 0);
-  text("START", width/2, .5*height+20);
+  text("START", width/2, .4*height+20);
   if (exitButton) {
     stroke(0, 150, 0);
   } else {
     stroke(255, 150);
   }
   fill(0, 0, 0, 200);
-  rect(width/2, .7*height, 420, 100);
+  rect(width/2, .6*height, 420, 100);
   fill(150, 0, 0);
-  text("EXIT", width/2, .7*height+20);
+  text("EXIT", width/2, .6*height+20);
+  textSize(20);
+  fill(150, 0, 0);
+  text("controls: w/W/UP - thrust, a/A/LEFT - rotate left, d/D/RIGHT - rotate right,\n"
+  + "SPACEBAR - fire, s - power up, p - pause, o - resume", width/2, .8*height+20);
   popMatrix();
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .5*height-50 && mouseY < .5*height+50) {
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .4*height-50 && mouseY < .4*height+50) {
     startButton = true;
     if (mousePressed && restartButton == false) {
       startScreen = false;
@@ -817,7 +824,7 @@ void startScreen () {
   } else {
     startButton = false;
   }
-  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .7*height-50 && mouseY < .7*height+50) {
+  if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .6*height-50 && mouseY < .6*height+50) {
     exitButton = true;
     if (mousePressed && restartButton == false) {
       exit();
@@ -838,7 +845,7 @@ void startScreen () {
  to start screen again.
  ***************************************************************/
 
-void gameOverScreen () {
+void gameOverScreen (String gameState) {
   drawBackGround();
   drawEffects();
   image(frame, width/2, height/2);
@@ -847,7 +854,7 @@ void gameOverScreen () {
   strokeWeight(3);
   textSize(125);
   fill(150, 0, 0);
-  text("GAME OVER", width/2, .3*height);
+  text(gameState, width/2, .3*height);
   textSize(70);
   text("SCORE: " + score, width/2, .5*height);
   fill(0);
@@ -929,13 +936,10 @@ void keyPressed() {
     }
   }
   if (key == 'p') {
-    //if (numPowerShots > 0 && !powerShot) {
-    //  powerShot = true;
-    //  pUpCounter = frameCount + pUpTime;
-    //  numPowerShots--;
-    //}
-    //canSwat = 3;
-    //powerUpBubble = 400;
+    noLoop(); //pause
+  }
+  if (key == 'o'){
+    loop(); //resume
   }
 }
 
@@ -1086,8 +1090,7 @@ boolean isNextLevel() {
  
  * Desc: when it is time for the next level, increases number of
  asteroids as well as increasing their potential speed.
- 
- /////////TODO finish the game once max level complete/////////////////////////////////////////////
+
  ***************************************************************/
  
 void levelUp() {
@@ -1105,6 +1108,10 @@ void levelUp() {
       }
       resetArrays();
       createAstro();
+    }
+    else if (level > levelMax){
+      gameWon = true;
+      gameOver = true;
     }
   }
 }
@@ -1174,19 +1181,10 @@ void resetGame() {
   level = 1;
   playerAlive = true;
   gameOver = false;
+  gameWon = false;
   shipLoc = new PVector(width/2, height/2);
   shipVel = new PVector(0, 0);
   shipAngle=radians(270);
   resetArrays();
   createAstro();
 }
-/*
-void powerUpTimer() {
- if (pUpCounter <= 0) {
- //    powerShot = false;
- pUpCounter = 300;
- } else {
- pUpCounter--;
- }
- }
- */
