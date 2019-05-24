@@ -25,6 +25,15 @@ float[] powerUpsList = {};
 int nebulaRandomizer, backGroundRandomizer, nebulaPosRandomizerX, nebulaPosRandomizerY;
 PFont font;
 
+//===== ship related globals ====
+boolean sUP=false, sDOWN=false, sRIGHT=false, sLEFT=false, sSPACE=false;
+float shipAngle=radians(270); 
+float turnSpeed = 0.08;
+PVector shipLoc, shipVel;
+float shipFric = 0.986;
+int speedLimit = 7;
+int crashCounter = 0;
+
 int astroNums = 1;
 int increaseAstros;
 int bigRockSize = 0;
@@ -38,15 +47,7 @@ PVector[] sAstroDirectOne = new PVector[astroNums];
 PVector[] sAstroDirectTwo = new PVector[astroNums];
 PVector[] sAstroDirectThree = new PVector[astroNums];
 
-//===== ship related globals ====
-boolean sUP=false, sDOWN=false, sRIGHT=false, sLEFT=false, sSPACE=false;
-float shipAngle=radians(270); 
-float turnSpeed = 0.08;
-PVector shipLoc, shipVel;
-float shipFric = 0.986;
-int speedLimit = 7;
-int crashCounter = 0;
-
+//===== asteriod related globals ====
 float astroSpeed = 1.0;
 float astroAccel = 0.5;
 float maxAstroSpeed = astroSpeed*5+astroAccel;
@@ -58,6 +59,7 @@ boolean[] destroyedOne = new boolean [astroNums];
 boolean[] destroyedTwo = new boolean [astroNums];
 boolean[] destroyedThree = new boolean [astroNums];
 
+//===== weapon related globals ====
 ArrayList<PVector> shots= new ArrayList<PVector>();
 ArrayList<PVector> sDirections= new ArrayList<PVector>();
 PVector shotVel;
@@ -68,8 +70,6 @@ float timeToFire = 1; // Will fire shot when >= 1. Controlled by fireRate.
 PImage bullet;
 PImage powerBullet;
 boolean powerShot = false;
-//int pUpCounter;
-//int pUpTime = 500;
 int numPowerShots = 1;
 int powerUpFreq = 9; // how often are powerUps spawned (1->10)
 int powerUpBubble = 0;
@@ -78,6 +78,7 @@ int swatter = -61;
 int powerUpCounter = 0;
 int pUpShot = 0;
 
+//===== game-state related globals ====
 int score, lives, level;
 int levelMax = 20;
 boolean playerAlive;
@@ -157,7 +158,7 @@ void draw() {
  * Parameters: none
  * Returns: Void
  
- * Desc:  
+ * Desc:  calculate the change in the the ships current location
  ***************************************************************/
 
 void moveShip() {
@@ -197,7 +198,8 @@ void moveShip() {
  * Parameters: none
  * Returns: Void
  
- * Desc:  
+ * Desc:  draws the ship, moveShip is called from here.
+ also handles crashing
  ***************************************************************/
 
 void drawShip() {
@@ -256,7 +258,8 @@ void drawShip() {
  * Parameters: none
  * Returns: Void
  
- * Desc:  
+ * Desc:  draws background, floating nebula, and handles
+ fade in/out level transition
  ***************************************************************/
 
 void drawBackGround() {
@@ -282,7 +285,8 @@ void drawBackGround() {
  * Parameters: none
  * Returns: Void
  
- * Desc:  
+ * Desc:  Draws hud elements, including power-up display, lives,
+ score, and level.
  ***************************************************************/
 
 void drawHud() {
@@ -324,13 +328,12 @@ void drawHud() {
       image(blueBall, 195, 55, 30, 30);
     }
     textSize(22);
-    if (frameCount % 60 < 45 ) {
+    if (frameCount % 60 < 45 && crashCounter == 0) {
       text("Press S to Engage The BigSwat 9002!", 300, 95);
     }
   }
   if ( levelTransCounter < 100 ) {
     levelTransCounter +=3;
-    println(levelTransCounter);
     textSize(62);
     text("NEXT LEVEL!", 280, -95);
   }
@@ -426,8 +429,7 @@ void loadImages() {
  
  * Desc: Draws graphics, should just be in Draw()
  5 functions put together because they are all called together every frame.
- 
- 
+ draw explosions, draw swatter, draw powerups and does power-up collisions
  ***************************************************************/
 
 void drawEffects() {
@@ -533,9 +535,9 @@ void drawEffects() {
   } else if (swatter >= height) {
     swatter = -61;
   }  
+
   // play the shoot sound
-  // this is a work-around for an absolute barry crocker of a problem
-  // a lot of my written assignment will be focused on this issue        
+  // this is a work-around for an absolute barry crocker of a problem    
   if ( timeToFire >= 1 ) {
     sine.stop();
   } else {
@@ -814,7 +816,7 @@ void startScreen () {
   textSize(20);
   fill(150, 0, 0);
   text("controls: w/W/UP - thrust, a/A/LEFT - rotate left, d/D/RIGHT - rotate right,\n"
-  + "SPACEBAR - fire, s - power up, p - pause, o - resume", width/2, .8*height+20);
+    + "SPACEBAR - fire, s - power up, p - pause, o - resume", width/2, .8*height+20);
   popMatrix();
   if (mouseX > width/2 - 210 && mouseX < width/2 + 210 && mouseY > .4*height-50 && mouseY < .4*height+50) {
     startButton = true;
@@ -857,7 +859,7 @@ void gameOverScreen (String gameState) {
   text(gameState, width/2, .3*height);
   textSize(70);
   text("SCORE: " + score, width/2, .5*height);
-  fill(0);
+  fill(0, 0, 0, 200);
   rect(width/2, .7*height, 420, 100);
   fill(150, 0, 0);
   text("AGAIN?", width/2, .7*height + 20);
@@ -913,7 +915,7 @@ void keyPressed() {
     sUP=true;
   }
   if (key == 's' || key == 'S' ) { 
-    if (canSwat >= 1 && crashCounter == 0 && swatter == -61) {
+    if (canSwat >= 1  && swatter == -61) {
       canSwat --;
       swatter = -60;
     }
@@ -924,21 +926,12 @@ void keyPressed() {
   if (key == 'a' || key == 'A' ) { 
     sLEFT=true;
   }
-  if (key == 'f') { 
-    if (pauseButton) {
-      noLoop();
-      pauseButton = false;
-      sine.stop();
-      thrustSound.stop();
-    } else {
-      loop();
-      pauseButton = true;
-    }
-  }
   if (key == 'p') {
     noLoop(); //pause
+    sine.stop();
+    thrustSound.stop();
   }
-  if (key == 'o'){
+  if (key == 'o') {
     loop(); //resume
   }
 }
@@ -966,6 +959,8 @@ void keyReleased() {
   }
   if (key == 's' || key == 'S' ) { 
     sDOWN=false;
+    crashCounter = 0;
+    powerUpBubble = 0;
   }
   if (key == 'd' || key == 'D' ) { 
     sRIGHT=false;
@@ -1090,9 +1085,9 @@ boolean isNextLevel() {
  
  * Desc: when it is time for the next level, increases number of
  asteroids as well as increasing their potential speed.
-
- ***************************************************************/
  
+ ***************************************************************/
+
 void levelUp() {
   if (isNextLevel() && lives > 0 && crashCounter <= 90 && levelTransCounter > 0) {
     level++;
@@ -1108,8 +1103,7 @@ void levelUp() {
       }
       resetArrays();
       createAstro();
-    }
-    else if (level > levelMax){
+    } else if (level > levelMax) {
       gameWon = true;
       gameOver = true;
     }
@@ -1176,6 +1170,9 @@ void resetGame() {
   astroNums = 1;
   increaseAstros = 1;
   crashCounter = 0;
+  canSwat = 0;
+  astroSpeed = 1;
+  sAstroSpeed = 3;
   score = 0;
   lives = 3;
   level = 1;
